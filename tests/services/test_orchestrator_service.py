@@ -1,45 +1,47 @@
-"""
-Test para la clase OrchestratorService
-"""
-
 import pytest
-from qgdiag_lib_arquitectura import ResponseBody
+from unittest.mock import AsyncMock, MagicMock, patch
 from app.services.orchestrator_service import OrchestratorService
-
-
+ 
+ 
 @pytest.mark.asyncio
-async def test_ejecutar_prompt(monkeypatch):
-    """
-    The wrapper should return a ResponseBody created from the JSON
-    in the HTTP response delivered by RestClient.
-    """
-
-    # ---------- fake HTTP response object ---------------------------
-    class FakeResp(object):
-        """Simula la respuesta de un cliente HTTP."""
-        @staticmethod
-        def json():
-            # Whatever structure your real orchestrator returns
-            return {"data": {"result": "ok"}}
-
-    async def fake_call(*args, **kwargs):
-        """Simula la llamada a un cliente HTTP."""
-        # Simulate RestClient.rest_call(...)
-        return FakeResp()
-
-    # Patch RestClient.rest_call so no real network traffic happens
-    monkeypatch.setattr(
-        "app.services.orchestrator_service.RestClient.rest_call",
-        fake_call,
-    )
-
-    # Act
-    res = await OrchestratorService().ejecutar_prompt(
-        prompt_id="prompt-123",
-        agent_id="agent-A",
-        app_id="app-X",
-    )
-
-    # Assert
-    assert isinstance(res, ResponseBody)
-    assert res.data["result"] == "ok"
+class TestOrchestratorService:
+    """Tests unitarios de ejecutar_prompt"""
+ 
+    async def _make_service(self):
+        return OrchestratorService()
+ 
+    # -----------   Happy path   ---------------
+    async def test_ejecutar_prompt_ok(self):
+        with patch.object(OrchestratorService, "_client") as mock_client, \
+             patch("app.services.orchestrator_service.ResponseBody") as mock_response_body:
+            
+            # Simulación de la respuesta del orquestador
+            mock_client.rest_call = AsyncMock(
+                return_value=MagicMock(json=lambda: {"data": "👍"})
+            )
+            mock_response_body.model_validate = MagicMock(return_value="validated")
+ 
+            service = await self._make_service()
+            result = await service.ejecutar_prompt(
+                prompt_id="p", agent_id="a", headers={"h": "1"}
+            )
+ 
+            mock_client.rest_call.assert_awaited_once_with(
+                rest_call=mock_client.rest_call.call_args.kwargs["rest_call"],
+                endpoint="/expose/ejecutar-prompt",
+                headers={"h": "1"},
+                params={"promptid": "p", "agentid": "a"},
+            )
+            mock_response_body.model_validate.assert_called_once_with({"data": "👍"})
+            assert result == "validated"
+ 
+    # -----------   Error path   -----------
+    async def test_ejecutar_prompt_error(self):
+        with patch.object(OrchestratorService, "_client") as mock_client:
+            mock_client.rest_call = AsyncMock(side_effect=RuntimeError("down"))
+            service = await self._make_service()
+ 
+            with pytest.raises(RuntimeError):
+                await service.ejecutar_prompt(
+                    prompt_id="p", agent_id="a", headers={}
+                )

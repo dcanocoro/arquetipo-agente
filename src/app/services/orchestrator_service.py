@@ -4,7 +4,7 @@
 from typing import Dict
 from qgdiag_lib_arquitectura import RestClient, HTTPMethod
 from qgdiag_lib_arquitectura import ResponseBody
-from app.config import settings
+from app.settings import settings
 
 
 class OrchestratorService(object):
@@ -13,37 +13,24 @@ class OrchestratorService(object):
     """
     _client = RestClient(
         url=settings.ORCHESTRATOR_URL,
-        port=None
+        port=settings.ORCHESTRATOR_PORT
     )
 
-    async def ejecutar_prompt(
-        self,
-        prompt_id: str,
-        agent_id: str,
-        app_id: str,
-        extra_headers: Dict[str, str] | None = None,
-    ) -> ResponseBody:
+    async def ejecutar_prompt(self,
+                              prompt_id: str,
+                              agent_id: str,
+                              headers: Dict[str, str] | None = None
+                              ) -> ResponseBody:
         """
-        Llama a GET /ejecutar-prompt?promptid=...&agentid=...&app_id=...
-
-        Devuelve
-        -------
-        OrchestratorResponse
-            .data será lo que el orquestador haya retornado.
+        Llama a GET /ejecutar-prompt y devuelve lo que el orquestador haya retornado.
         """
-        headers = {"Accept": "application/json"}
-        if extra_headers:
-            headers.update(extra_headers)
-
         response = await self._client.rest_call(
             rest_call=HTTPMethod.GET,
-            endpoint="/ejecutar-prompt",
+            endpoint="/expose/ejecutar-prompt",
             headers=headers,
             params={
                 "promptid": prompt_id,
                 "agentid": agent_id,
-                "app_id": app_id,
-            },
+            }
         )
-
         return ResponseBody.model_validate(response.json())

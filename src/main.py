@@ -16,11 +16,14 @@ Atributos:
     con el nombre del proyecto y el prefijo de ruta raíz.
 """
 
+from app.settings import settings as temp
 from fastapi import FastAPI
-from app.config import settings
 from app.routes.users import router as user_routes
+from qgdiag_lib_arquitectura.utilities.middleware import LoggingMiddleware
+from qgdiag_lib_arquitectura.security import authentication
 
-app = FastAPI(title="FastAPI Microservice", root_path="/qgdiag-microservicio-python-test")
+app = FastAPI(title=temp.PROJECT_NAME, root_path="/qgdiag-esqueleto-python")
+app.add_middleware(LoggingMiddleware)
 app.include_router(user_routes)
 
 
@@ -33,12 +36,14 @@ async def health():
 
 
 @app.on_event("startup")
-async def on_startup():
-    """Evento que se ejecuta al iniciar la aplicación."""
-    print(f"Starting {settings.PROJECT_NAME} in {settings.ENVIRONMENT} environment...")
+async def on_startup():    
+    jwks = temp.get_jwks()
+    if not jwks:
+        jwks = await authentication.fetch_jwks(channel="1")    
+    app.state.jwks_store = authentication.Authenticator(jwks)
 
 
 @app.on_event("shutdown")
 async def on_shutdown():
     """Evento que se ejecuta al apagar la aplicación."""
-    print(f"Shutting down {settings.PROJECT_NAME}...")
+    print(f"Shutting down {temp.PROJECT_NAME}...")

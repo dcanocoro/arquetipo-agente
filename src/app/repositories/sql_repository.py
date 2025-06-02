@@ -2,14 +2,14 @@
  define funciones para interactuar con ella."""
 
 from qgdiag_lib_arquitectura import SQLDatabase
-from app.models.user_model import UserTable
-from app.config import settings
+from app.models.user_model import AppTable
+from app.settings import settings
 
 # --- Inicializa ORM -----------------------------------
 
 sql_database = SQLDatabase()
 
-sql_database.create_connection(
+session = sql_database.create_connection(
     username=settings.DB_USER,
     password=settings.DB_PASSWORD,
     host=settings.DB_HOST,
@@ -25,7 +25,7 @@ sql_database.create_connection(
 # -----Funciones para interactuar con la bd----------------------------------------------------------
 
 
-async def get_user_by_id(user_id: int) -> UserTable | None:
+async def get_app_status(application_id: int) -> AppTable | None:
     """Devuelve un usuario por su ID."""
-    async with sql_database.session() as session:
-        return await session.get(UserTable, user_id)
+    async with session as session:
+        return await session.get(AppTable, application_id)

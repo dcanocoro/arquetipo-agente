@@ -1,20 +1,17 @@
-"""Lógica de negocio para obtener parámetros específicos de un usuario interno"""
+"""Endpoint dummy de demostración que obtiene el estado de una aplicación"""
 
-from app.repositories.mysql import get_user_by_id
+from app.repositories.sql_repository import get_app_status
 
 
 class InternalUserService(object):
     """Clase de servicio para obtener parámetros específicos de un usuario interno."""
 
     @staticmethod
-    async def get_prompt_params(user_id: int) -> dict:
-        """Devuelve el diccionario que se pasará al prompt."""
-        user = await get_user_by_id(user_id)
-        if not user:
-            raise ValueError(f"User {user_id} not found")
-
-        # Example template params required by PROMPT_ID
+    async def get_status(application_id: int) -> dict:
+        """Devuelve el status de la app"""
+        app = await get_app_status(application_id)
+        if not app:
+            raise ValueError(f"User {application_id} not found")
         return {
-            "name": user.full_name or user.email.split("@")[0],
-            "email": user.email,
+
         }
