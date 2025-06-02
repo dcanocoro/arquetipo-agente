@@ -1,0 +1,45 @@
+envVars:
+  dev:
+    ## Variables de Arquitectura
+    DATABASE_SERVICE_NAME: "JK-MISERSQL.unicajasc.corp"
+    DATABASE_NAME: ""
+    DATABASE_USERNAME: ""
+    ## Variables del Microservicio
+
+  pre:
+    ## Variables de Arquitectura
+    DATABASE_SERVICE_NAME: "jk-miserpre.unicajasc.corp"
+    DATABASE_NAME: ""
+    DATABASE_USERNAME: ""
+    ## Variables del Microservicio
+
+  pro:
+    ## Variables de Arquitectura
+    DATABASE_SERVICE_NAME: "unagmser.unicajasc.corp"
+    DATABASE_NAME: ""
+    DATABASE_USERNAME: ""
+    ## Variables del Microservicio
+
+# IMPORTANTE: Los secretos vacíos serán ignorados al momento de desplegar el microservicio.
+envSecrets:
+  dev:
+    ## Secretos basicos de Arquitectura
+    COUCHBASE_PASSWORD: ""
+    DATABASE_PASSWORD: ""
+
+    ## Secretos adicionales del Microservicio
+
+  pre: 
+    ## Secretos basicos de Arquitectura
+    COUCHBASE_PASSWORD: ""
+    DATABASE_PASSWORD: ""
+
+    ## Secretos adicionales del Microservicio
+
+  pro:
+    ## Secretos basicos de Arquitectura
+    COUCHBASE_PASSWORD: ""
+    DATABASE_PASSWORD: ""
+
+    ## Secretos adicionales del Microservicio
+
