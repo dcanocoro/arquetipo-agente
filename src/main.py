@@ -18,13 +18,13 @@ Atributos:
 
 from app.settings import settings as temp
 from fastapi import FastAPI
-from app.routes.users import router as user_routes
-from qgdiag_lib_arquitectura.utilities.middleware import LoggingMiddleware
+from app.routes.call_orchestrator import router as call_orchestrator_route
+from qgdiag_lib_arquitectura import LoggingMiddleware
 from qgdiag_lib_arquitectura.security import authentication
 
 app = FastAPI(title=temp.PROJECT_NAME, root_path="/qgdiag-esqueleto-python")
 app.add_middleware(LoggingMiddleware)
-app.include_router(user_routes)
+app.include_router(call_orchestrator_route)
 
 
 @app.get("/health")
@@ -37,8 +37,8 @@ async def health():
 
 @app.on_event("startup")
 async def on_startup():    
-    jwks = temp.get_jwks()
-    if not jwks:
+    jwks = temp.get_jwks()    
+    if not jwks:        
         jwks = await authentication.fetch_jwks(channel="1")    
     app.state.jwks_store = authentication.Authenticator(jwks)
 

@@ -9,8 +9,8 @@ Base = declarative_base()
 
 
 class AppTable(Base):
-    """Modelo User para SQLAlchemy ORM."""
-    __tablename__ = "users"
+    """Modelo Application para SQLAlchemy ORM."""
+    __tablename__ = "applications"  # Rename table to match its purpose
 
     id = Column(Integer, primary_key=True, index=True)
     status = Column(String, nullable=False)

@@ -6,12 +6,12 @@ import os
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "qgdiag-esqueleto-orquestador-python"
-    ENV: str = "dev"
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     ARCHITECTURE_HANDLERS_SECURITY_ENABLED: bool = False
     JWKS_LOCAL: Optional[Dict[str, Any]] = None
 
     # Orchestrator
-    ORCHESTRATOR_URL: str = os.getenv("ORCHESTRATOR_URL", "http://localhost")
+    ORCHESTRATOR_URL: str = os.getenv("ORCHESTRATOR_URL", "https://urldefense.com/v3/__http://localhost__;!!GHGCd83Yjs5jPw!MYzHc9gICZ-S7p2EAAXk3t0SUx0Su1bsO9ALRvu_MBcCl1ivAF1-Klt9SJWBQKlnmUlnky8c41j3bQ2sCivz7tQMJ-GpQDIb$ ")
     ORCHESTRATOR_PORT: str = os.getenv("ORCHESTRATOR_PORT", "8000")
 
     # Database

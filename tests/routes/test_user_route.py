@@ -1,11 +1,11 @@
+import pytest
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
-import pytest
 from fastapi import FastAPI
 
 @pytest.fixture
 def fastapi_app():
-    from app.routes import users as users_router
+    from app.routes import call_orchestrator as call_orch_router
     from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers
 
     app = FastAPI()
@@ -15,16 +15,16 @@ def fastapi_app():
         return {"Token": "test.token", "Application-Id": "test-app-id"}
 
     app.dependency_overrides[get_authenticated_headers] = mock_get_authenticated_headers
-    app.include_router(users_router.router)
+    app.include_router(call_orch_router.router)
     return app
 
 
-class TestUsersRouter:
-    """Tests del endpoint POST /users/process (nueva versión)"""
+class TestCallOrchestratorRouter:
+    """Tests del endpoint POST /call_orchestrator/process"""
 
-    @patch("app.routes.users.get_application_id")
-    @patch("app.routes.users.InternalUserService")
-    @patch("app.routes.users.OrchestratorService")
+    @patch("app.routes.call_orchestrator.get_application_id")
+    @patch("app.routes.call_orchestrator.InternalUserService")
+    @patch("app.routes.call_orchestrator.OrchestratorService")
     def test_process_user_success(self, mock_orchestrator_cls, mock_internal_service_cls, mock_get_app_id, fastapi_app):
         client = TestClient(fastapi_app)
 
@@ -33,18 +33,18 @@ class TestUsersRouter:
 
         # Mock internal service call
         mock_internal_instance = mock_internal_service_cls.return_value
-        mock_internal_instance.get_status = AsyncMock(return_value={"status": "ok"})
+        mock_internal_instance.get_status = AsyncMock(return_value="active")
 
         # Mock orchestrator call
         mock_orchestrator_instance = mock_orchestrator_cls.return_value
         mock_orchestrator_instance.ejecutar_prompt = AsyncMock(return_value={"data": "todo OK"})
 
-        # Test input
-        params = {"prompt_id": "prompt-123", "agent_id": "agent-abc"}
-        headers = {"Token": "test.token", "Application-Id": "test-app-id"}
-
         # Execution
-        resp = client.post("/users/process", params=params, headers=headers)
+        resp = client.post(
+            "/call_orchestrator/process",
+            params={"prompt_id": "prompt-123", "agent_id": "agent-abc"},
+            headers={"Token": "test.token", "Application-Id": "test-app-id"}
+        )
 
         # Assertions
         assert resp.status_code == 200
@@ -62,9 +62,9 @@ class TestUsersRouter:
             headers=expected_headers,
         )
 
-    @patch("app.routes.users.get_application_id")
-    @patch("app.routes.users.InternalUserService")
-    @patch("app.routes.users.OrchestratorService")
+    @patch("app.routes.call_orchestrator.get_application_id")
+    @patch("app.routes.call_orchestrator.InternalUserService")
+    @patch("app.routes.call_orchestrator.OrchestratorService")
     def test_process_user_failure(self, mock_orchestrator_cls, mock_internal_service_cls, mock_get_app_id, fastapi_app):
         client = TestClient(fastapi_app)
 
@@ -78,13 +78,11 @@ class TestUsersRouter:
         mock_orchestrator_instance = mock_orchestrator_cls.return_value
         mock_orchestrator_instance.ejecutar_prompt = AsyncMock(side_effect=Exception("boom!"))
 
-        headers = {"Token": "test.token", "Application-Id": "test-app-id"}
         resp = client.post(
-            "/users/process",
-            params=dict(prompt_id="p", agent_id="a"),
-            headers=headers,
+            "/call_orchestrator/process",
+            params={"prompt_id": "prompt-x", "agent_id": "agent-y"},
+            headers={"Token": "test.token", "Application-Id": "test-app-id"}
         )
 
         assert resp.status_code == 500
         assert resp.json()["detail"] == "boom!"
-

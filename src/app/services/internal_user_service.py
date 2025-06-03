@@ -7,11 +7,9 @@ class InternalUserService(object):
     """Clase de servicio para obtener parámetros específicos de un usuario interno."""
 
     @staticmethod
-    async def get_status(application_id: int) -> dict:
+    async def get_status(application_id: int) -> str:
         """Devuelve el status de la app"""
-        app = await get_app_status(application_id)
+        app = get_app_status(application_id)
         if not app:
             raise ValueError(f"User {application_id} not found")
-        return {
-
-        }
+        return app.status  # Return the actual status instead of True
