@@ -6,17 +6,15 @@ Router público que contiene un endpoint de demostración que
 """
 
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from app.services.internal_user_service import InternalUserService
 from app.services.orchestrator_service import OrchestratorService
 from app.settings import settings
-from qgdiag_lib_arquitectura import CustomLogger
-from qgdiag_lib_arquitectura import ResponseBody
-# Ahora usaremos request tambien
+from qgdiag_lib_arquitectura import CustomLogger, ResponseBody, InternalServerErrorException
 from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers, get_application_id 
-# setters de user y application ID
 
-router = APIRouter(prefix="/call_orchestrator", tags=["Users"])
+
+router = APIRouter(prefix="/call_orchestrator", tags=["call orchestrator"])
 _logger = CustomLogger("call_orchestratorr")
 
 
@@ -48,6 +46,6 @@ async def process_user(request: Request,
                                                                headers=headers
                                                                )
         return response
-    except Exception as exc:
+    except Exception as e:
         _logger.error("Processing failed", excs_info=exc)
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise InternalServerErrorException(str(e))
