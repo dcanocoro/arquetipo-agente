@@ -23,7 +23,7 @@ class TestCallOrchestratorRouter:
     """Tests del endpoint POST /call_orchestrator/process"""
 
     @patch("app.routes.call_orchestrator.get_application_id")
-    @patch("app.routes.call_orchestrator.InternalUserService")
+    @patch("app.routes.call_orchestrator.InternalAPPService")
     @patch("app.routes.call_orchestrator.OrchestratorService")
     def test_process_user_success(self, mock_orchestrator_cls, mock_internal_service_cls, mock_get_app_id, fastapi_app):
         client = TestClient(fastapi_app)
@@ -63,7 +63,7 @@ class TestCallOrchestratorRouter:
         )
 
     @patch("app.routes.call_orchestrator.get_application_id")
-    @patch("app.routes.call_orchestrator.InternalUserService")
+    @patch("app.routes.call_orchestrator.InternalAppService")
     @patch("app.routes.call_orchestrator.OrchestratorService")
     def test_process_user_failure(self, mock_orchestrator_cls, mock_internal_service_cls, mock_get_app_id, fastapi_app):
         client = TestClient(fastapi_app)

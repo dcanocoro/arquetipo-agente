@@ -3,8 +3,8 @@
 from app.repositories.sql_repository import get_app_status
 
 
-class InternalUserService(object):
-    """Clase de servicio para obtener parámetros específicos de un usuario interno."""
+class InternalAppService(object):
+    """Clase de servicio dummy para obtener el status de una app"""
 
     @staticmethod
     async def get_status(application_id: int) -> str:

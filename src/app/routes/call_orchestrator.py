@@ -7,7 +7,7 @@ Router público que contiene un endpoint de demostración que
 
 
 from fastapi import APIRouter, Depends, Request
-from app.services.internal_user_service import InternalUserService
+from app.services.internal_service import InternalAppService
 from app.services.orchestrator_service import OrchestratorService
 from app.settings import settings
 from qgdiag_lib_arquitectura import CustomLogger, ResponseBody, InternalServerErrorException
@@ -32,7 +32,7 @@ async def process_user(request: Request,
         application_id = get_application_id(request)
         # llamada de ejemplo a un microservicio interno
         try:
-            app_status = await InternalUserService().get_status(application_id)
+            app_status = await InternalAppService().get_status(application_id)
             if not app_status:
                 _logger.warning(f"Application ID {application_id} not found")
             else:
