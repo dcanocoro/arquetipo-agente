@@ -46,4 +46,4 @@ async def on_startup():
 @app.on_event("shutdown")
 async def on_shutdown():
     """Evento que se ejecuta al apagar la aplicación."""
-    print(f"Shutting down {temp.PROJECT_NAME}...")
+    print(f"Shutting down {settings.PROJECT_NAME}...")
