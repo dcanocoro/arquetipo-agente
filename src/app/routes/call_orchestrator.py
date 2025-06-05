@@ -12,7 +12,7 @@ from app.services.orchestrator_service import OrchestratorService
 from app.settings import settings
 from qgdiag_lib_arquitectura import CustomLogger, ResponseBody
 from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers, get_application_id 
-from qgdiag_lib_arquitectura.exceptions import InternalServerErrorException
+from qgdiag_lib_arquitectura.exceptions.types import InternalServerErrorException
 
 
 router = APIRouter(prefix="/call_orchestrator", tags=["call orchestrator"])
