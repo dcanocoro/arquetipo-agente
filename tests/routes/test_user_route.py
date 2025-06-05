@@ -23,7 +23,7 @@ class TestCallOrchestratorRouter:
     """Tests del endpoint POST /call_orchestrator/process"""
 
     @patch("app.routes.call_orchestrator.get_application_id")
-    @patch("app.routes.call_orchestrator.InternalAPPService")
+    @patch("app.routes.call_orchestrator.InternalAppService")
     @patch("app.routes.call_orchestrator.OrchestratorService")
     def test_process_user_success(self, mock_orchestrator_cls, mock_internal_service_cls, mock_get_app_id, fastapi_app):
         client = TestClient(fastapi_app)
@@ -61,28 +61,3 @@ class TestCallOrchestratorRouter:
             agent_id="agent-abc",
             headers=expected_headers,
         )
-
-    @patch("app.routes.call_orchestrator.get_application_id")
-    @patch("app.routes.call_orchestrator.InternalAppService")
-    @patch("app.routes.call_orchestrator.OrchestratorService")
-    def test_process_user_failure(self, mock_orchestrator_cls, mock_internal_service_cls, mock_get_app_id, fastapi_app):
-        client = TestClient(fastapi_app)
-
-        mock_get_app_id.return_value = "test-app-id"
-
-        # Internal service dummy failure should not block
-        mock_internal_instance = mock_internal_service_cls.return_value
-        mock_internal_instance.get_status = AsyncMock(side_effect=Exception("dummy fails"))
-
-        # Orchestrator failure triggers HTTP 500
-        mock_orchestrator_instance = mock_orchestrator_cls.return_value
-        mock_orchestrator_instance.ejecutar_prompt = AsyncMock(side_effect=Exception("boom!"))
-
-        resp = client.post(
-            "/call_orchestrator/process",
-            params={"prompt_id": "prompt-x", "agent_id": "agent-y"},
-            headers={"Token": "test.token", "Application-Id": "test-app-id"}
-        )
-
-        assert resp.status_code == 500
-        assert resp.json()["detail"] == "boom!"

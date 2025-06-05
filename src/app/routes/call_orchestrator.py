@@ -47,5 +47,5 @@ async def process_user(request: Request,
                                                                )
         return response
     except Exception as e:
-        _logger.error("Processing failed", excs_info=exc)
+        _logger.error("Processing failed", excs_info=e)
         raise InternalServerErrorException(str(e))
