@@ -1,3 +1,6 @@
+"""Tests para orchestrator schema"""
+
+
 from app.schemas.services.orchestrator import OrchestratorRequest
 import pytest
 from pydantic import ValidationError

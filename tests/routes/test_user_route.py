@@ -1,10 +1,16 @@
+"""Tests para Orchestrator router"""
+
 import pytest
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 
+TEST_TOKEN = "test.token"
+
+
 @pytest.fixture
 def fastapi_app():
+    """Fixtures para FastAPI app"""
     from app.routes import call_orchestrator as call_orch_router
     from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers
 
@@ -12,7 +18,7 @@ def fastapi_app():
 
     # Mock authentication headers
     def mock_get_authenticated_headers():
-        return {"Token": "test.token", "Application-Id": "test-app-id"}
+        return {"Token": TEST_TOKEN, "Application-Id": "test-app-id"}
 
     app.dependency_overrides[get_authenticated_headers] = mock_get_authenticated_headers
     app.include_router(call_orch_router.router)
@@ -26,6 +32,8 @@ class TestCallOrchestratorRouter:
     @patch("app.routes.call_orchestrator.InternalAppService")
     @patch("app.routes.call_orchestrator.OrchestratorService")
     def test_process_user_success(self, mock_orchestrator_cls, mock_internal_service_cls, mock_get_app_id, fastapi_app):
+        """Test para el Happy path del enpoint"""
+
         client = TestClient(fastapi_app)
 
         # Mock application ID
@@ -43,7 +51,7 @@ class TestCallOrchestratorRouter:
         resp = client.post(
             "/call_orchestrator/process",
             params={"prompt_id": "prompt-123", "agent_id": "agent-abc"},
-            headers={"Token": "test.token", "Application-Id": "test-app-id"}
+            headers={"Token": TEST_TOKEN, "Application-Id": "test-app-id"}
         )
 
         # Assertions
@@ -51,7 +59,7 @@ class TestCallOrchestratorRouter:
         assert resp.json()["data"] == "todo OK"
 
         expected_headers = {
-            "Token": "test.token",
+            "Token": TEST_TOKEN,
             "Application-Id": "test-app-id"
         }
 

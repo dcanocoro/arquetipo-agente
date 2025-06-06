@@ -1,3 +1,5 @@
+"""Tests para orchestrator service"""
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from app.services.orchestrator_service import OrchestratorService

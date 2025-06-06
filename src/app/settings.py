@@ -1,3 +1,5 @@
+"""Configuración para el arquetipo"""
+
 from pydantic_settings import BaseSettings
 from typing import Optional, Dict, Any
 import yaml

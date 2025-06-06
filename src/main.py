@@ -36,7 +36,12 @@ async def health():
 
 
 @app.on_event("startup")
-async def on_startup():    
+async def on_startup():
+
+    """
+    Evento que se ejecuta al iniciar la aplicación.
+    Obtiene claves JWKS
+    """  
     jwks = settings.get_jwks()    
     if not jwks:        
         jwks = await authentication.fetch_jwks(channel="1")    
