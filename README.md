@@ -1,6 +1,6 @@
 # 📦 Esqueleto arquetipo microservicio python - Configuración y Ejecución
 
-Este proyecto ha sido desarrollado en Python y requiere la configuración de un entorno virtual para garantizar el aislamiento de dependencias y una correcta ejecución. A continuación, se describen los pasos necesarios para su preparación y puesta en marcha.
+Este proyecto ha sido desarrollado en Python y requiere la configuración de un entorno virtual para garantizar el aislamiento de dependencias y una correcta ejecución.
 
 ## 📁 Estructura del Proyecto
 
