@@ -1,10 +1,14 @@
-# 📦 "FastAPI Microservice" - Configuración y Ejecución
+# 📦 Esqueleto arquetipo microservicio python - Configuración y Ejecución
 
 Este proyecto ha sido desarrollado en Python y requiere la configuración de un entorno virtual para garantizar el aislamiento de dependencias y una correcta ejecución. A continuación, se describen los pasos necesarios para su preparación y puesta en marcha.
 
+## 📁 Estructura del Proyecto
+
+Se asume que todas las operaciones descritas a continuación se ejecutan desde el directorio `app`, que contiene el archivo principal `main.py` y el fichero de dependencias `requirements.txt`.
+
 ## ⚙️ Configuración y Ejecución
 
-Sigue los  pasos desde la raíz del proyecto para configurar y ejecutar la aplicación:
+Para configurar el entorno virtual, instalar las dependencias necesarias y ejecutar la aplicación, ejecute la siguiente secuencia de comandos desde la carpeta `app`:
 
 ### En Windows (cmd o PowerShell):
 
@@ -25,7 +29,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt 
 ```
 
-**y para ejecutar el microservicio utilizamos el siguiente comando desde la carpeta src**
+**y para ejecutar el orquestador utilizamos el siguiente comando**
 
 ```bash
 uvicorn main:app --port=8002

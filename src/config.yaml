@@ -1,0 +1,5 @@
+JWKS_LOCAL:
+  test-local:
+    - kty: "RSA"
+      e: "AQAB"
+      n: "DTbZg0S361rf3m52XDGuHzAJ_wVYUFr_FCmjbQSmVOmJoUqj6Zfpyumiz3cixurQuvjFpslBiZxMiVnc25y_n--m52gSDp1MEHBj2cTM1zlKIbT5-oc2BMWZxecS3HFT5iGpEy3UXqbffMltgA2wIHF2IY_9Q5ieYmYH6VLKDdeJ4HxJtt7eflzEKaVAFx-9wfNwt2lJM7W03R2ZPMOWRShdwW5pyFyhYv4gvGH4sEdyj9CIgGoKDSMYbgyNP9YmdLTjaFbDRJaA09IdIh2ofs6CJ3sQnnnfpCTkQb4w2sVyl5MDXUk65e0z6IHPngtMyBEGpWBGqxtmFEvpvzc"

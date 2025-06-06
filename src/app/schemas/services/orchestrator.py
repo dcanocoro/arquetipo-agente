@@ -9,4 +9,4 @@ class OrchestratorRequest(BaseModel):
     prompt_id: str
     agent_id: str
     app_id: str
-    params: Dict[str, Any]
+    # params: Dict[str, Any]
