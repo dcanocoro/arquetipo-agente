@@ -12,11 +12,9 @@ envVars:
   PROJECT_NAME: "qgdiag-microservicio-python-test"
   ENVIRONMENT: "preproduccion"
 
-
  pro:
  ## Variables de Arquitectura
   PROJECT_NAME: "qgdiag-microservicio-python-test"
   ENVIRONMENT: "produccion"
-
 
   ## Variables del microservicio
