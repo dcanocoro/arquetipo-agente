@@ -19,7 +19,7 @@ router = APIRouter(prefix="/call_orchestrator", tags=["call orchestrator"])
 _logger = CustomLogger("call_orchestratorr")
 
 
-@router.post("/process", response_model=ResponseBody)
+@router.get("/process", response_model=ResponseBody)
 async def process_user(request: Request,
                        prompt_id: str,
                        agent_id: str,
@@ -30,7 +30,8 @@ async def process_user(request: Request,
     """
     try:
         # obtenemos application_id del certificado
-        application_id = get_application_id(request)
+        application_id = headers["IAG-App-Id"]
+        
         # llamada de ejemplo a un microservicio interno
         try:
             app_status = await InternalAppService().get_status(application_id)
