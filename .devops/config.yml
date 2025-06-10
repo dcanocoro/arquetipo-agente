@@ -7,67 +7,17 @@ envVars:
   ORCHESTRATOR_URL: "https://qgdiag.backend-desa.unicajasc.corp/qgdiag-ms-orquestador-iag"
   X_IAG_APP_ID: "Bastanteos"
   URL_CERT: "https://aebd.backend-desa.unicajasc.corp:443/qgd-arq-ms-pkm/jwks"
-  URL_AUTH: "https://qgdiag.backend-desa.unicajasc.corp:443/qgdiag-ms-auth-aicore"
-  AUTH_PORT: "443"
-  URL_CONTROL_GASTOS: "https://qgdiag.backend-desa.unicajasc.corp/qgdiag-ms-control-de-gasto"
-  PATH_CERT: "/etc/pki/tls/cert/ca-unicaja.crt"
-  
-  ### SQL server
-  DATABASE_HOST: "JK-MISERSQL.unicajasc.corp"
-  DATABASE_PORT: 1433
-  DATABASE_DB_NAME: "" # Incluir la BD
-  DATABASE_SERVER_TYPE: "mssql"
-  DATABASE_DRIVER_TYPE: "pyodbc"
-  DATABASE_DRIVER: "ODBC Driver 18 for SQL Server"
-
-  ###Couchbase
-  DATABASE_HOST: ""
-  DATABASE_PORT: ""
-  DATABASE_DB_NAME: "" # Incluir la BD
-  DATABASE_SERVER_TYPE: ""
-  DATABASE_DRIVER_TYPE: "pyodbc"
-  DATABASE_DRIVER: ""
-
-  ## Variables del microservicio
 
  pre:
   ## Variables de Arquitectura
   PROJECT_NAME: "qgdiag-microservicio-python-test"
   ENVIRONMENT: "preproduccion"
 
-  ### SQL server
-  DATABASE_HOST: "JK-MISERSQL.unicajasc.corp"
-  DATABASE_PORT: 1433
-  DATABASE_DB_NAME: "" # Incluir la BD
-  DATABASE_SERVER_TYPE: "mssql"
-  DATABASE_DRIVER_TYPE: "pyodbc"
-  DATABASE_DRIVER: "ODBC Driver 18 for SQL Server"
-  ## Variables del microservicio
 
  pro:
  ## Variables de Arquitectura
   PROJECT_NAME: "qgdiag-microservicio-python-test"
   ENVIRONMENT: "produccion"
 
-  ### SQL server
-  DATABASE_HOST: "JK-MISERSQL.unicajasc.corp"
-  DATABASE_PORT: 1433
-  DATABASE_DB_NAME: "" # Incluir la BD
-  DATABASE_SERVER_TYPE: "mssql"
-  DATABASE_DRIVER_TYPE: "pyodbc"
-  DATABASE_DRIVER: "ODBC Driver 18 for SQL Server"
 
   ## Variables del microservicio
-
-envSecrets:
-## Variables de Arquitectura
-  dev:
-    DATABASE_USER: "" # Incluir
-    DATABASE_PASSWORD: "" # Incluir
-  pre:
-    DATABASE_USER: "" # Incluir
-    DATABASE_PASSWORD: "" # Incluir
-  pro:
-    DATABASE_USER: "" # Incluir
-    DATABASE_PASSWORD: "" # Incluir
-## Variables del microservicio
