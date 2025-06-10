@@ -1,45 +1,73 @@
 envVars:
-  dev:
-    ## Variables de Arquitectura
-    DATABASE_SERVICE_NAME: "JK-MISERSQL.unicajasc.corp"
-    DATABASE_NAME: ""
-    DATABASE_USERNAME: ""
-    ## Variables del Microservicio
+ dev:
+  ## Variables de Arquitectura
+  PROJECT_NAME: "qgdiag-microservicio-python-test"
+  ENVIRONMENT: "development"
 
-  pre:
-    ## Variables de Arquitectura
-    DATABASE_SERVICE_NAME: "jk-miserpre.unicajasc.corp"
-    DATABASE_NAME: ""
-    DATABASE_USERNAME: ""
-    ## Variables del Microservicio
+  ORCHESTRATOR_URL: "https://qgdiag.backend-desa.unicajasc.corp/qgdiag-ms-orquestador-iag"
+  X_IAG_APP_ID: "Bastanteos"
+  URL_CERT: "https://aebd.backend-desa.unicajasc.corp:443/qgd-arq-ms-pkm/jwks"
+  URL_AUTH: "https://qgdiag.backend-desa.unicajasc.corp/qgdiag-ms-auth-aicore"
+  AUTH_PORT: "443"
+  URL_CONTROL_GASTOS: "https://qgdiag.backend-desa.unicajasc.corp/qgdiag-ms-control-de-gasto"
+  PATH_CERT: # Ruta donde esté ubicado el certificado para 
+  
+  ### SQL server
+  DATABASE_HOST: "JK-MISERSQL.unicajasc.corp"
+  DATABASE_PORT: 1433
+  DATABASE_DB_NAME: ""
+  DATABASE_SERVER_TYPE: "mssql"
+  DATABASE_DRIVER_TYPE: "pyodbc"
+  DATABASE_DRIVER: "ODBC Driver 18 for SQL Server"
 
-  pro:
-    ## Variables de Arquitectura
-    DATABASE_SERVICE_NAME: "unagmser.unicajasc.corp"
-    DATABASE_NAME: ""
-    DATABASE_USERNAME: ""
-    ## Variables del Microservicio
+  ###Couchbase
+  DATABASE_HOST: ""
+  DATABASE_PORT: ""
+  DATABASE_DB_NAME: ""
+  DATABASE_SERVER_TYPE: ""
+  DATABASE_DRIVER_TYPE: "pyodbc"
+  DATABASE_DRIVER: ""
 
-# IMPORTANTE: Los secretos vacíos serán ignorados al momento de desplegar el microservicio.
+  ## Variables del microservicio
+
+ pre:
+  ## Variables de Arquitectura
+  PROJECT_NAME: "qgdiag-microservicio-python-test"
+  ENVIRONMENT: "preproduccion"
+
+  ### SQL server
+  DATABASE_HOST: "JK-MISERSQL.unicajasc.corp"
+  DATABASE_PORT: 1433
+  DATABASE_DB_NAME: ""
+  DATABASE_SERVER_TYPE: "mssql"
+  DATABASE_DRIVER_TYPE: "pyodbc"
+  DATABASE_DRIVER: "ODBC Driver 18 for SQL Server"
+  ## Variables del microservicio
+
+ pro:
+ ## Variables de Arquitectura
+  PROJECT_NAME: "qgdiag-microservicio-python-test"
+  ENVIRONMENT: "produccion"
+
+  ### SQL server
+  DATABASE_HOST: "JK-MISERSQL.unicajasc.corp"
+  DATABASE_PORT: 1433
+  DATABASE_DB_NAME: ""
+  DATABASE_SERVER_TYPE: "mssql"
+  DATABASE_DRIVER_TYPE: "pyodbc"
+  DATABASE_DRIVER: "ODBC Driver 18 for SQL Server"
+
+  ## Variables del microservicio
+
 envSecrets:
+## Variables de Arquitectura
   dev:
-    ## Secretos basicos de Arquitectura
-    COUCHBASE_PASSWORD: ""
-    DATABASE_PASSWORD: ""
-
-    ## Secretos adicionales del Microservicio
-
-  pre: 
-    ## Secretos basicos de Arquitectura
-    COUCHBASE_PASSWORD: ""
-    DATABASE_PASSWORD: ""
-
-    ## Secretos adicionales del Microservicio
-
+    DATABASE_USER: "sqlserver-qgdiag-dev"
+    DATABASE_PASSWORD: "sqlserver-qgdiag-dev"
+  pre:
+    DATABASE_USER: "sqlserver-qgdiag-pre"
+    DATABASE_PASSWORD: "sqlserver-qgdiag-pre"
   pro:
-    ## Secretos basicos de Arquitectura
-    COUCHBASE_PASSWORD: ""
-    DATABASE_PASSWORD: ""
-
-    ## Secretos adicionales del Microservicio
-
+    DATABASE_USER: "sqlserver-qgdiag-pro"
+    DATABASE_PASSWORD: "sqlserver-qgdiag-pro"
+## Variables del microservicio
