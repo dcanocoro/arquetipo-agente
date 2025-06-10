@@ -5,7 +5,6 @@ envVars:
   ENVIRONMENT: "development"
 
   ORCHESTRATOR_URL: "https://qgdiag.backend-desa.unicajasc.corp/qgdiag-ms-orquestador-iag"
-  X_IAG_APP_ID: "Bastanteos"
   URL_CERT: "https://aebd.backend-desa.unicajasc.corp:443/qgd-arq-ms-pkm/jwks"
 
  pre:
