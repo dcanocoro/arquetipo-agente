@@ -7,12 +7,15 @@ Router público que contiene un endpoint de demostración que
 
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import StreamingResponse
 from app.services.internal_service import InternalAppService
 from app.services.orchestrator_service import OrchestratorService
+from app.services.streaming_proxy_service import StreamingProxyService
 from app.settings import settings
 from qgdiag_lib_arquitectura import CustomLogger, ResponseBody
 from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers, get_application_id 
 from qgdiag_lib_arquitectura.exceptions.types import InternalServerErrorException
+
 
 
 router = APIRouter(prefix="/call_orchestrator", tags=["call orchestrator"])
@@ -31,7 +34,7 @@ async def process_user(request: Request,
     try:
         # obtenemos application_id del certificado
         application_id = headers["IAG-App-Id"]
-        
+
         # llamada de ejemplo a un microservicio interno
         try:
             app_status = await InternalAppService().get_status(application_id)
@@ -51,3 +54,17 @@ async def process_user(request: Request,
     except Exception as e:
         _logger.error("Processing failed", excs_info=e)
         raise InternalServerErrorException(str(e))
+
+
+@router.post("/stream")
+async def proxy_stream(promptid: str, agentid: str, request: Request,
+                       headers: dict = Depends(get_authenticated_headers)):
+    """
+    Proxy endpoint that forwards the request to the orchestrator and streams the response.
+    """
+    try:
+        service = StreamingProxyService()
+        response = await service.forward_streaming_request(request, promptid, agentid, headers)
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Proxy streaming failed: {str(e)}")
