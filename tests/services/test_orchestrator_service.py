@@ -96,12 +96,15 @@ def _patch_async_client_ok(monkeypatch):
 
     class _FakeClient:
         def __init__(self, *_, **__):
+            """Empty method for creating a Fake client"""
             pass
 
         async def __aenter__(self):
+            """Empty method for creating a Fake client"""
             return self
 
         async def __aexit__(self, *exc):
+            """Empty method for creating a Fake client"""
             return False
 
         # .stream devuelve el context-manager fake
