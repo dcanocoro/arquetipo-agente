@@ -54,8 +54,9 @@ class OrchestratorService(object):
 
         try:
             async with httpx.AsyncClient(timeout=None) as client:
-                response = await client.post(
-                    orchestrator_streaming_url,
+                response = await client.request(
+                    method="POST",
+                    url=orchestrator_streaming_url,
                     params={"promptid": prompt_id, "agentid": agent_id},
                     headers=headers,
                     content=body,

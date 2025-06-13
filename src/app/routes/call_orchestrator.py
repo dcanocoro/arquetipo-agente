@@ -6,11 +6,10 @@ Router público que contiene un endpoint de demostración que
 """
 
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from app.services.internal_service import InternalAppService
 from app.services.orchestrator_service import OrchestratorService
-from app.services.streaming_proxy_service import StreamingProxyService
 from app.settings import settings
 from qgdiag_lib_arquitectura import CustomLogger, ResponseBody
 from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers, get_application_id 
@@ -63,8 +62,11 @@ async def proxy_stream(promptid: str, agentid: str, request: Request,
     Proxy endpoint that forwards the request to the orchestrator and streams the response.
     """
     try:
-        service = StreamingProxyService()
-        response = await service.forward_streaming_request(request, promptid, agentid, headers)
-        return response
+        orchestrator_service = OrchestratorService()
+        return await orchestrator_service.stream_prompt(request=request,
+                                                      prompt_id=promptid,
+                                                      agent_id=agentid,
+                                                      headers=headers
+                                                      )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Proxy streaming failed: {str(e)}")
