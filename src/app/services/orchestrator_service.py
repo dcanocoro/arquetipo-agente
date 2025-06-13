@@ -5,6 +5,7 @@ from typing import Dict
 from fastapi import Request
 from fastapi.responses import StreamingResponse
 import httpx
+import os
 from qgdiag_lib_arquitectura import RestClient, HTTPMethod
 from qgdiag_lib_arquitectura import ResponseBody
 from app.settings import settings
@@ -51,7 +52,7 @@ class OrchestratorService(object):
             # Cuerpo original (no se puede leer dos veces)
             body = await request.body()
 
-            url = ("http://127.0.0.1:8000/streaming/stream")
+            url = f"{settings.ORCHESTRATOR_URL}/streaming/stream"
 
             async def stream_generator():
                 try:
