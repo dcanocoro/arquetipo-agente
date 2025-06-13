@@ -23,7 +23,7 @@ from qgdiag_lib_arquitectura import LoggingMiddleware
 from qgdiag_lib_arquitectura.security import authentication
 
 app = FastAPI(title=settings.PROJECT_NAME, root_path="/qgdiag-microservicio-python-test")
-app.add_middleware(LoggingMiddleware)
+# app.add_middleware(LoggingMiddleware)
 app.include_router(call_orchestrator_route)
 
 
