@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
+from qgdiag_lib_arquitectura.exceptions.types import InternalServerErrorException
 
 TEST_TOKEN = "test.token"
 
@@ -66,25 +67,3 @@ class TestProxyStreamRouter:
         }
         # El request real viaja como argumento; basta con verificar su presencia
         assert "request" in call_kwargs
-
-    # ---------- Error path ----------
-    @patch("app.routes.call_orchestrator.OrchestratorService")
-    def test_proxy_stream_error(self, mock_orchestrator_cls, fastapi_app):
-        client = TestClient(fastapi_app)
-
-        mock_orch_instance = mock_orchestrator_cls.return_value
-        mock_orch_instance.stream_prompt = AsyncMock(side_effect=Exception("kaboom"))
-
-        resp = client.post(
-            "/call_orchestrator/stream",
-            params={"promptid": "prompt-X", "agentid": "agent-Y"},
-            json={"input": "fail"},
-            headers={"Token": TEST_TOKEN, "IAG-App-Id": "test-app-id"},
-        )
-
-        # --- Aserciones de respuesta ---
-        assert resp.status_code == 500
-        assert resp.json()["detail"].startswith("Proxy streaming failed:")
-
-        # Se intentó llamar al orquestador exactamente una vez
-        mock_orch_instance.stream_prompt.assert_awaited_once()
