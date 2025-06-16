@@ -8,13 +8,14 @@ Router público que contiene un endpoint de demostración que
 
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
+from qgdiag_lib_arquitectura import CustomLogger, ResponseBody
+from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers
+from qgdiag_lib_arquitectura.exceptions.types import InternalServerErrorException
 from app.services.internal_service import InternalAppService
 from app.services.orchestrator_service import OrchestratorService
+from app.repositories.db_dependencies import get_db_app
 from app.settings import settings
-from qgdiag_lib_arquitectura import CustomLogger, ResponseBody
-from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers, get_application_id 
-from qgdiag_lib_arquitectura.exceptions.types import InternalServerErrorException
-
 
 
 router = APIRouter(prefix="/call_orchestrator", tags=["call orchestrator"])
@@ -25,18 +26,17 @@ _logger = CustomLogger("call_orchestratorr")
 async def process_user(request: Request,
                        prompt_id: str,
                        agent_id: str,
-                       headers: dict = Depends(get_authenticated_headers)
+                       headers: dict = Depends(get_authenticated_headers),
+                       db: Session = Depends(get_db_app)
                        ):
     """
     Endpoint de demostración que envía informacion al orquestador.
     """
     try:
-        # obtenemos application_id del certificado
         application_id = headers["IAG-App-Id"]
 
-        # llamada de ejemplo a un microservicio interno
         try:
-            app_status = await InternalAppService().get_status(application_id)
+            app_status = await InternalAppService().get_status(application_id, db)
             if not app_status:
                 _logger.warning(f"Application ID {application_id} not found")
             else:
@@ -44,14 +44,12 @@ async def process_user(request: Request,
         except Exception as dummy_exc:
             _logger.warning(f"Dummy internal service call failed: {dummy_exc}")
 
-        # llamar al orquestador sin importar el resultado de app_status
         response = await OrchestratorService().ejecutar_prompt(prompt_id=prompt_id,
                                                                agent_id=agent_id,
-                                                               headers=headers
-                                                               )
+                                                               headers=headers)
         return response
     except Exception as e:
-        _logger.error("Processing failed", excs_info=e)
+        _logger.error("Processing failed", exc_info=e)
         raise InternalServerErrorException(str(e))
 
 
@@ -69,4 +67,4 @@ async def proxy_stream(promptid: str, agentid: str, request: Request,
                                                       headers=headers
                                                       )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Proxy streaming failed: {str(e)}")
+        raise InternalServerErrorException(str(e))
