@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.services.internal_service import InternalAppService
 from qgdiag_lib_arquitectura.exceptions.types import InternalServerErrorException
 
+ROUTE = "app.services.internal_service.get_app_status"
 
 @pytest.mark.asyncio
 class TestInternalAppService:
@@ -17,7 +18,7 @@ class TestInternalAppService:
         mock_db = MagicMock(spec=Session)
 
         with patch(
-            "app.services.internal_service.get_app_status",
+            ROUTE,
             return_value="running",
         ) as mock_get_app_status:
             result = await InternalAppService.get_status(
@@ -32,7 +33,7 @@ class TestInternalAppService:
         mock_db = MagicMock(spec=Session)
 
         with patch(
-            "app.services.internal_service.get_app_status",
+            ROUTE,
             return_value=None,
         ) as mock_get_app_status:
             result = await InternalAppService.get_status(
@@ -47,7 +48,7 @@ class TestInternalAppService:
         mock_db = MagicMock(spec=Session)
 
         with patch(
-            "app.services.internal_service.get_app_status",
+            ROUTE,
             side_effect=RuntimeError("DB down"),
         ) as mock_get_app_status:
             with pytest.raises(InternalServerErrorException) as exc:
