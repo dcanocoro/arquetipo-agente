@@ -156,8 +156,6 @@ async def test_stream_prompt_ok(monkeypatch):
 
     resp = await service.stream_prompt(
         request=request,
-        prompt_id="p",
-        agent_id="a",
         headers={"h": "1"},
     )
 
