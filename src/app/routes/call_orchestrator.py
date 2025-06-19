@@ -54,17 +54,14 @@ async def process_user(request: Request,
 
 
 @router.post("/stream")
-async def proxy_stream(promptid: str, agentid: str, request: Request,
+async def proxy_stream(request: Request,
                        headers: dict = Depends(get_authenticated_headers)):
     """
     Proxy endpoint that forwards the request to the orchestrator and streams the response.
     """
     try:
         orchestrator_service = OrchestratorService()
-        return await orchestrator_service.stream_prompt(request=request,
-                                                      prompt_id=promptid,
-                                                      agent_id=agentid,
-                                                      headers=headers
-                                                      )
+        return await orchestrator_service.stream_prompt(request=request, headers=headers)
+    
     except Exception as e:
         raise InternalServerErrorException(str(e))

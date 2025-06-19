@@ -11,6 +11,7 @@ from qgdiag_lib_arquitectura import ResponseBody
 from app.settings import settings
 from qgdiag_lib_arquitectura.exceptions.types import InternalServerErrorException
 
+ENDPOINT_STREAMING = "/qgdiag-ms-orquestador-iag/streaming/stream"
 
 class OrchestratorService(object):
     """
@@ -43,8 +44,6 @@ class OrchestratorService(object):
     async def stream_prompt(
             self,
             request: Request,
-            prompt_id: str,
-            agent_id: str,
             headers: Dict[str, str],
         ) -> StreamingResponse:
             """
@@ -53,8 +52,8 @@ class OrchestratorService(object):
             # Cuerpo original (no se puede leer dos veces)
             body = await request.body()
 
-            # url= f"{settings.ORCHESTRATOR_URL}/streaming/stream"
-            url = "http://127.0.0.1:8000/streaming/stream"
+            url= f"{settings.ORCHESTRATOR_URL}:{settings.ORCHESTRATOR_PORT}{ENDPOINT_STREAMING}"
+            # url = "http://127.0.0.1:8000/streaming/stream"
 
             async def stream_generator():
                 try:
@@ -63,7 +62,7 @@ class OrchestratorService(object):
                         async with client.stream(
                             "POST",
                             url,
-                            params={"promptid": prompt_id, "agentid": agent_id},
+                            params={"promptid": "test", "agentid": "test"},
                             headers=headers,
                             content=body,
                         ) as resp:

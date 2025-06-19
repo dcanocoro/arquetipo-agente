@@ -46,7 +46,6 @@ class TestProxyStreamRouter:
         # Ejecución de la petición
         resp = client.post(
             "/call_orchestrator/stream",
-            params={"promptid": "prompt-1", "agentid": "agent-A"},
             json={"input": "hola"},
             headers={"Token": TEST_TOKEN, "IAG-App-Id": "test-app-id"},
         )
@@ -59,8 +58,6 @@ class TestProxyStreamRouter:
         mock_orch_instance.stream_prompt.assert_awaited_once()
         call_kwargs = mock_orch_instance.stream_prompt.call_args.kwargs
 
-        assert call_kwargs["prompt_id"] == "prompt-1"
-        assert call_kwargs["agent_id"] == "agent-A"
         assert call_kwargs["headers"] == {
             "Token": TEST_TOKEN,
             "IAG-App-Id": "test-app-id",
