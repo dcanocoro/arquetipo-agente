@@ -121,7 +121,7 @@ async def call_llm(request: Request, headers: dict = Depends(get_authenticated_h
             base_url=BASE_URL + "/model/openai",
             http_client=http_client
         )
-        asyncio.run(get_response())
+        asyncio.run(get_response(client))
     except Exception as e:
         raise InternalServerErrorException(str(e))
 
