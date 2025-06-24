@@ -64,7 +64,7 @@ async def test_login_raises_internal_error(monkeypatch):
     assert "init failure" in str(excinfo.value)
 
 @pytest.mark.asyncio
-async def test_forbidden_in_get_response(monkeypatch)
+async def test_forbidden_in_get_response(monkeypatch):
     monkeypatch.setattr(main_module.ai_core, 'AIServerClient', DummyServerClient)
     class BadAsyncOpenAI(DummyAsyncOpenAI):
         class completions:
