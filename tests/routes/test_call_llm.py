@@ -5,6 +5,11 @@ from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from qgdiag_lib_arquitectura.exceptions.types import InternalServerErrorException
+from qgdiag_lib_arquitectura.exceptions.types import ForbiddenException
+from qgdiag_lib_arquitectura.utilities.ai_core import ai_core
+from qgdiag_lib_arquitectura.utilities.ai_core.ai_core import retrieve_credentials
+import httpx as httpx
+from openai import AsyncOpenAI
 
 TEST_TOKEN = "test.token"
 

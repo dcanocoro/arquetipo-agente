@@ -88,11 +88,11 @@ async def call_llm(request: Request, headers: dict = Depends(get_authenticated_h
     async def retrieve():
         return await retrieve_credentials(headers=headers)
 
-    def login():
+    def login(access_key, secret_key):
         try:
             return ai_core.AIServerClient(
-                access_key=ACCESS_KEY,
-                secret_key=SECRET_KEY,
+                access_key=access_key,
+                secret_key=secret_key,
                 base=BASE_URL,
             )
         except Exception as e:
@@ -112,10 +112,10 @@ async def call_llm(request: Request, headers: dict = Depends(get_authenticated_h
             raise ForbiddenException(f"Error en la llamada a OpenAI: {str(e)}") 
     try:
         access_key, secret_key = asyncio.run(retrieve())
-        server_connection = login()
+        server_connection = login(access_key, secret_key)
         http_client = httpx.AsyncClient(event_hooks={"request": [amake_check_blocked(headers=headers)], "response": [alogging_gastos]}) 
         http_client.cookies=server_connection.cookies
-        api_key = ACCESS_KEY + ":" + SECRET_KEY
+        api_key = access_key + ":" + secret_key
         client = AsyncOpenAI(
             api_key=api_key,
             base_url=BASE_URL + "/model/openai",
