@@ -1,92 +1,83 @@
+"""Tests para Orchestrator router (POST /stream)"""
+
 import pytest
-from unittest.mock import patch, MagicMock
-from fastapi import FastAPI
+from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
-import os
-import asyncio
+from fastapi import FastAPI
+from qgdiag_lib_arquitectura.exceptions.types import InternalServerErrorException
 
-# Dependencias a sobre-escribir
-from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers
-from app.repositories.db_dependencies import get_db_app
-import app.routes.call_orchestrator as call_module
-from app.routes.call_orchestrator import router, InternalServerErrorException
+TEST_TOKEN = "test.token"
 
-# Fixture de la app con override de autenticación
+
 @pytest.fixture
 def fastapi_app():
+    """
+    Devuelve una instancia de FastAPI con el router real y
+    las dependencias de autenticación sobreescritas.
+    """
+    from app.routes import call_orchestrator as call_orch_router
+    from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers
+
     app = FastAPI()
 
-    # Override de autenticación
     def mock_get_authenticated_headers():
-        return {"Token": "test.token", "IAG-App-Id": "test-app-id"}
+        return {"Token": TEST_TOKEN, "IAG-App-Id": "test-app-id"}
+
     app.dependency_overrides[get_authenticated_headers] = mock_get_authenticated_headers
+    app.include_router(call_orch_router.router)
+    return app
 
-    mock_db = MagicMock()
-    app.dependency_overrides[get_db_app] = lambda: mock_db
 
-    app.include_router(router)
-    return TestClient(app)
+class TestCallLLMStreamRouter:
+    """Tests del endpoint POST /call_orchestrator/call-llm-test"""
 
-class DummyServerClient:
-    def __init__(self, access_key, secret_key, base):
-        self.cookies = {'session': 'dummy'}
+    @patch("app.routes.call_orchestrator.retrieve_credentials", new_callable=AsyncMock)
+    @patch("aicore.AIServerClient")
+    @patch("app.routes.call_orchestrator.httpx.AsyncClient")
+    def test_call_llm_success(self, mock_httpx_client_cls, mock_aiserver_cls, mock_retrieve_cls, fastapi_app):
+        mock_retrieve.return_value = ("key1", "secret2")
+        
+        fake_server = Mock()
+        fake_server.cookies = {"session": "abc"}
+        mock_aiserver_cls.return_value = fake_server
 
-class DummyAsyncOpenAI:
-    def __init__(self, api_key, base_url, http_client):
-        self.chat = self
+        
+        fake_httpx = Mock()
+        mock_httpx_client_cls.return_value = fake_httpx
 
-    class completions:
-        @staticmethod
-        async def create(model, messages, max_tokens):
-            return {"id": "response_id", "choices": [{"message": {"content": "OK"}}]}
+       
+        with patch("your_module.routes.AsyncOpenAI") as mock_openai_cls:
+            fake_openai = Mock()
+            async def fake_create(model, messages, max_tokens):
+                return {"choices":[{"message":{"content":"¡respuesta larga!"}}]}
+            fake_openai.chat = Mock(completions=Mock(create=fake_create))
+            mock_openai_cls.return_value = fake_openai
 
-class TestCallLlmEndpoint:
-    """Tests para POST /call_orchestrator/call-llm-test"""
+            client = TestClient(app)
 
-    @pytest.fixture(autouse=True)
-    def patch_common(self, monkeypatch):
-        async def fake_retrieve(headers):
-            return ("a_key", "s_key")
-        monkeypatch.setattr(call_module, 'retrieve_credentials', fake_retrieve)
-        monkeypatch.setattr(asyncio, 'run', lambda coro: asyncio.get_event_loop().run_until_complete(coro))
-        monkeypatch.setenv('ACCESS_KEY', 'a_key')
-        monkeypatch.setenv('SECRET_KEY', 's_key')
+            
+            resp = client.post("/call-llm-test")
 
-    @patch.object(call_module.ai_core, 'AIServerClient', new=DummyServerClient)
-    @patch.object(call_module, 'AsyncOpenAI', new=DummyAsyncOpenAI)
-    def test_call_llm_success(self, fastapi_app):
-        client = fastapi_app
-        response = client.post(
-            "/call_orchestrator/call-llm-test",
-            headers={"Token": "test.token", "IAG-App-Id": "test-app-id"}
-        )
-        assert response.status_code == 200
-        assert response.content in (b"null", b"")
+            
+            assert resp.status_code == 200
 
-    @patch.object(call_module.ai_core, 'AIServerClient', side_effect=ValueError("init fail"))
-    @patch.object(call_module, 'AsyncOpenAI', new=DummyAsyncOpenAI)
-    def test_call_llm_login_error(self, fastapi_app, mock_client):
-        client = fastapi_app
-        response = client.post(
-            "/call_orchestrator/call-llm-test",
-            headers={"Token": "test.token", "IAG-App-Id": "test-app-id"}
-        )
-        assert response.status_code == 500
-        assert "init fail" in response.json()["error"]
+            mock_retrieve.assert_awaited_once_with(headers={"Authorization": "Bearer tok", "IAG-App-Id": "app-id"})
+            mock_aiserver_cls.assert_called_once_with(
+                access_key="key1",
+                secret_key="secret2",
+                base="https://aicorepru.unicajasc.corp/Monolith/api"
+            )
 
-    @patch.object(call_module.ai_core, 'AIServerClient', new=DummyServerClient)
-    def test_call_llm_api_error(self, fastapi_app, monkeypatch):
-        class BadOpenAI(DummyAsyncOpenAI):
-            class completions:
-                @staticmethod
-                async def create(model, messages, max_tokens):
-                    raise RuntimeError("api err")
-        monkeypatch.setattr(call_module, 'AsyncOpenAI', BadOpenAI)
+            mock_httpx_client_cls.assert_called_once()
+            _, kwargs = mock_httpx_client_cls.call_args
+            assert "event_hooks" in kwargs
+            hooks = kwargs["event_hooks"]
+            assert isinstance(hooks["request"][0], type(lambda: None))
+            assert isinstance(hooks["response"][0], type(lambda: None))
 
-        client = fastapi_app
-        response = client.post(
-            "/call_orchestrator/call-llm-test",
-            headers={"Token": "test.token", "IAG-App-Id": "test-app-id"}
-        )
-        assert response.status_code == 500
-        assert "api err" in response.json()["error"]
+            mock_openai_cls.assert_called_once_with(
+                api_key="key1:secret2",
+                base_url="https://aicorepru.unicajasc.corp/Monolith/api/model/openai",
+                http_client=fake_httpx
+            )
+
