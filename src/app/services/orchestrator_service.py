@@ -62,7 +62,6 @@ class OrchestratorService(object):
                         async with client.stream(
                             "POST",
                             url,
-                            params={"promptid": "test", "agentid": "test"},
                             headers=headers,
                             content=body,
                         ) as resp:

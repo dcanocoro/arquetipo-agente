@@ -17,6 +17,17 @@ from app.services.orchestrator_service import OrchestratorService
 from app.repositories.db_dependencies import get_db_app
 from app.settings import settings
 
+import os
+from qgdiag_lib_arquitectura.utilities.ai_core import ai_core
+from dotenv import load_dotenv
+from qgdiag_lib_arquitectura.utilities.ai_core.control_gastos import alogging_gastos, amake_check_blocked
+from qgdiag_lib_arquitectura.utilities.ai_core.ai_core import retrieve_credentials
+import asyncio
+import httpx as httpx
+from openai import AsyncOpenAI, OpenAI
+from qgdiag_lib_arquitectura.exceptions.types import ForbiddenException
+import asyncio
+
 
 router = APIRouter(prefix="/call_orchestrator", tags=["call orchestrator"])
 _logger = CustomLogger("call_orchestratorr")
@@ -65,3 +76,4 @@ async def proxy_stream(request: Request,
     
     except Exception as e:
         raise InternalServerErrorException(str(e))
+

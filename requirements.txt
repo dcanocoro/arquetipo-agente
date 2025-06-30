@@ -1,4 +1,6 @@
 pytest-asyncio==0.26.0
 pytest-cov==6.1.0
 asyncmy==0.2.10
-qgdiag-lib-arquitectura==1.14.0
+qgdiag-lib-arquitectura==1.15.0
+openai
+asyncio
