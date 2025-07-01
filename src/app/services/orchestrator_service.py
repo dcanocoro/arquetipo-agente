@@ -6,12 +6,14 @@ from fastapi import Request
 from fastapi.responses import StreamingResponse
 import httpx
 import os
-from qgdiag_lib_arquitectura import RestClient, HTTPMethod
+from qgdiag_lib_arquitectura import RestClient, HTTPMethod, CustomLogger
 from qgdiag_lib_arquitectura import ResponseBody
 from app.settings import settings
 from qgdiag_lib_arquitectura.exceptions.types import InternalServerErrorException
 
 ENDPOINT_STREAMING = "/qgdiag-ms-orquestador-iag/streaming/stream"
+
+_logger=CustomLogger("Microservicio Python")
 
 class OrchestratorService(object):
     """
@@ -54,6 +56,7 @@ class OrchestratorService(object):
 
             url= f"{settings.ORCHESTRATOR_URL}:{settings.ORCHESTRATOR_PORT}{ENDPOINT_STREAMING}"
             # url = "http://127.0.0.1:8000/streaming/stream"
+            _logger.info(f"Iniciando streaming hacia el orquestador: {url}")
 
             async def stream_generator():
                 try:
@@ -65,7 +68,8 @@ class OrchestratorService(object):
                             headers=headers,
                             content=body,
                         ) as resp:
-
+                            
+                            _logger.info(f"Conectando al orquestador: {resp.status_code}")
                             # Propaga errores HTTP (>399) como excepciones
                             resp.raise_for_status()
 
@@ -73,6 +77,7 @@ class OrchestratorService(object):
                             async for chunk in resp.aiter_raw():
                                 yield chunk
                 except Exception as e:
+                    _logger.error("Error durante el streaming desde el orquestador")
                     raise InternalServerErrorException(str(e))
                 
 
