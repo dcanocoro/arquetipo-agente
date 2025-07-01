@@ -69,7 +69,7 @@ class OrchestratorService(object):
                             content=body,
                         ) as resp:
                             
-                            _logger.info(f"Conectando al orquestador: {resp.status_code}")
+                            _logger.info(f"Conectando al orquestador")
                             # Propaga errores HTTP (>399) como excepciones
                             resp.raise_for_status()
 
