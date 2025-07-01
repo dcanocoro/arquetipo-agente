@@ -7,7 +7,7 @@ import os
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "qgdiag-esqueleto-orquestador-python"
+    PROJECT_NAME: str = "qgdiag-microservicio-python-test"
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     ARCHITECTURE_HANDLERS_SECURITY_ENABLED: bool = False
     JWKS_LOCAL: Optional[Dict[str, Any]] = None
