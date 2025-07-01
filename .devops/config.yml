@@ -4,8 +4,8 @@ envVars:
   PROJECT_NAME: "qgdiag-microservicio-python-test"
   ENVIRONMENT: "development"
 
-  ORCHESTRATOR_URL: "https://qgdiag.backend-desa.unicajasc.corp/qgdiag-ms-orquestador-iag"
-  ORCHESTRATOR_PORT: "443"
+  ORCHESTRATOR_URL: "https://qgdiag-qgdiag-ms-orquestador-iag.ub-qgdiag-svc"
+  ORCHESTRATOR_PORT: "8080"
   URL_CERT: "https://aebd.backend-desa.unicajasc.corp:443/qgd-arq-ms-pkm/jwks"
 
  pre:

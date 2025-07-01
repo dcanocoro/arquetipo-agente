@@ -70,10 +70,13 @@ async def proxy_stream(request: Request,
     """
     Proxy endpoint that forwards the request to the orchestrator and streams the response.
     """
+    _logger.info("Inicio de la llamada al orquestador")
     try:
         orchestrator_service = OrchestratorService()
+        _logger.info("Fin de la llamada al orquestador")
         return await orchestrator_service.stream_prompt(request=request, headers=headers)
     
     except Exception as e:
+        _logger.error("Error inesperado en la llamada al orquestador")
         raise InternalServerErrorException(str(e))
 
