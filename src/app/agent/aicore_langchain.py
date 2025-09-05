@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 from qgdiag_lib_arquitectura.utilities.ai_core import ai_core
 from qgdiag_lib_arquitectura.utilities.ai_core.ai_core import retrieve_credentials
 
-def get_openai_compatible_chat(*, headers: Dict[str, str], base_url: str, engine_id: str) -> ChatOpenAI:
+async def get_openai_compatible_chat(*, headers: Dict[str, str], base_url: str, engine_id: str) -> ChatOpenAI:
     """
     Build a ChatOpenAI instance against AI Server's OpenAI-compatible endpoint.
     - Retrieves credentials via your standard flow (headers → keys)
@@ -14,10 +14,8 @@ def get_openai_compatible_chat(*, headers: Dict[str, str], base_url: str, engine
     - Returns a ChatOpenAI bound to <base_url>/model/openai with model=<engine_id>
     """
     # 1) Get keys from your microservice
-    access_key, secret_key = ai_core.retrieve_credentials(headers) if hasattr(ai_core, "retrieve_credentials") else None
-    if access_key is None:
-        # fallback to explicit import if needed (some versions expose retrieve_credentials elsewhere)
-        access_key, secret_key = retrieve_credentials(headers)
+
+    access_key, secret_key = await retrieve_credentials(headers)
 
     # 2) Login to AI Server to get cookie session
     server = ai_core.AIServerClient(access_key=access_key, secret_key=secret_key, base=base_url)

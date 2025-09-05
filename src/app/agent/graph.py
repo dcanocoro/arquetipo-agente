@@ -9,17 +9,18 @@ from langgraph.runtime import Runtime
 from app.agent.context import Context
 from app.agent.state import InputState, State
 from app.agent.tools import TOOLS
-from app.agent.utils import load_chat_model
 from app.agent.aicore_langchain import get_openai_compatible_chat
 
 # --------- Nodos -------------
 
 async def call_model(state: State, runtime: Runtime[Context]) -> Dict[str, List[AIMessage]]:
-    model = get_openai_compatible_chat(
+    chat = await get_openai_compatible_chat(
         headers=runtime.context.headers,
         base_url=runtime.context.base_url,
-        engine_id=runtime.context.engine_id,
-    ).bind_tools(TOOLS)
+        engine_id=runtime.context.engine_id
+    )
+
+    model = chat.bind_tools(TOOLS)
 
     system_message = runtime.context.system_prompt.format(
         system_time=datetime.now(tz=UTC).isoformat()
@@ -30,6 +31,8 @@ async def call_model(state: State, runtime: Runtime[Context]) -> Dict[str, List[
         await model.ainvoke(
             [{"role": "system", "content": system_message}, *state.messages]
         ),
+    response: AIMessage = await model.ainvoke(
+        [{"role": "system", "content": system_message}, *state.messages]
     )
 
     if state.is_last_step and response.tool_calls:

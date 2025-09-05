@@ -19,6 +19,7 @@ from app.settings import settings
 from app.agent.graph import graph
 from app.agent.context import Context
 from app.agent.state import State
+from app.agent.utils import get_message_text
 
 
 router = APIRouter(prefix="/agent", tags=["agent"])
@@ -47,27 +48,29 @@ async def react_run_endpoint(
     log.info("Inicio de ejecución de /agent/react-run")
     try:
 
-        # 1) Build runtime context for the graph
+        # 1) Build runtime context for the graph. Assuming Context has an async factory/build method.
         ctx = Context(
             # keep your prompt, or override per-feature if needed
             # system_prompt=prompts.SYSTEM_PROMPT,
-            model=f"openai-compatible/{model_id}",
+            engine_id=settings.ENGINE_ID,
             headers=headers,
-            base_url=settings.AI_CORE_BASE_URL,
+            base_url=settings.AICORE_URL
         )
 
         # Prepare input messages for this turn
-        input_state = {"messages": [HumanMessage(content=req.message)]}
+        input_state: State = {"messages": [HumanMessage(content=req.message)]}
 
         # Run graph with a small recursion cap (agent will stop before infinite tool loops)
-        final: State = await graph.ainvoke(
+        final_result = await graph.ainvoke(
             input_state,
             context=ctx,
             recursion_limit=4,
         )
 
-        # Extract the last AI text safely
-        from agent.utils import get_message_text
+        # Ensure the final state is a State object, not a dict
+        final: State = final_result if isinstance(final_result, State) else State(**final_result)
+
+
         ai_text = ""
         if final.messages:
             ai_text = get_message_text(final.messages[-1]) or ""

@@ -17,8 +17,7 @@ class Context:
         metadata={"description": "System prompt for the agent."},
     )
 
-    engine_id: str = settings.ENGINE_ID
-
+    engine_id: str = ""
 
     # Keep your original shape, but we will pass "openai-compatible/<ENGINE_ID>"
     # model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
