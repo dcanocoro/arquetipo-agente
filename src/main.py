@@ -18,13 +18,13 @@ Atributos:
 
 from app.settings import settings 
 from fastapi import FastAPI
-from app.routes.call_orchestrator import router as call_orchestrator_route
+from app.routes.agent import router as route
 from qgdiag_lib_arquitectura import LoggingMiddleware, init_error_handlers
 from qgdiag_lib_arquitectura.security import authentication
 
 app = FastAPI(title=settings.PROJECT_NAME, root_path="/qgdiag-microservicio-python-test")
 app.add_middleware(LoggingMiddleware)
-app.include_router(call_orchestrator_route)
+app.include_router(route)
 init_error_handlers(app, context_name=settings.PROJECT_NAME)
 
 

@@ -4,7 +4,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 from typing import Tuple
 
-from .aicore_langchain import get_openai_compatible_chat  # NEW helper
+from app.agent.aicore_langchain import get_openai_compatible_chat
 
 
 def get_message_text(msg: BaseMessage) -> str:

@@ -1,32 +1,49 @@
-"""Configuración para el arquetipo"""
+"""
+Módulo de configuración de la aplicación.
 
+Este módulo utiliza Pydantic Settings para definir y cargar la configuración de la aplicación
+a partir de un archivo YAML. La clase Settings hereda de BaseSettings y define múltiples variables
+de entorno que configuran diversos aspectos de la aplicación, como URLs y puertos de servicios.
+El método classmethod load_from_yaml() calcula dinámicamente la ruta al archivo de configuración,
+asegurando que al estar settings.py en src/app y config.yaml en src se pueda localizar el archivo correctamente.
+Además, se incluyen métodos para determinar si el entorno es local y para obtener claves JWKS configuradas.
+"""
+import os
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from typing import Optional, Dict, Any
 import yaml
-import os
 
+
+load_dotenv()
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "qgdiag-microservicio-python-test"
+    """Configuración de la aplicación."""
+    PROJECT_NAME: str = os.getenv("PROJECT_NAME", "qgdiag-esqueleto-orquestador-python")
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
-    ARCHITECTURE_HANDLERS_SECURITY_ENABLED: bool = False
+
+    AICORE_URL: str = os.getenv("BASE_URL", "https://aicorepru.unicajasc.corp/Monolith/api")
+    ENGINE_ID: str = os.getenv("ENGINE_ID", "4ccb0725-fad1-453e-a673-c350c8fd5bc9")
+
+    URL_LOCALHOST: str = os.getenv("URL_LOCALHOST", "http://127.0.0.1")
+
+    URL_HIST_CONV: str = os.getenv("URL_HIST_CONV", URL_LOCALHOST)
+    HIST_CONV_PORT: str = os.getenv("HIST_CONV_PORT", "8006")
+
+    DRIVER_URL: str = os.getenv("DRIVER_URL", URL_LOCALHOST)
+    DRIVER_PORT: str = os.getenv("DRIVER_PORT", "8005")
+
+    URL_CONTROL_GASTOS: str = os.getenv("URL_CONTROL_GASTOS", URL_LOCALHOST)
+    CONTROL_GASTOS_PORT: str = os.getenv("CONTROL_GASTOS_PORT", "8004")
+
+    GESTOR_PROMPT_URL: str = os.getenv("URL_GESTOR_PROMPTS", URL_LOCALHOST)
+    GESTOR_PROMPT_PORT: str = os.getenv("GESTOR_PROMPTS_PORT", "")
+
+    GUARDRAILS_URL: str = os.getenv("GUARDRAILS_URL", URL_LOCALHOST)
+    GUARDRAILS_PORT: str = os.getenv("GUARDRAILS_PORT", "8007")
+
+
     JWKS_LOCAL: Optional[Dict[str, Any]] = None
-
-    # Orchestrator
-    ORCHESTRATOR_URL: str = os.getenv("ORCHESTRATOR_URL", "http://127.0.0.1")
-    ORCHESTRATOR_PORT: str = os.getenv("ORCHESTRATOR_PORT", "8000")
-
-    # Database
-    DB_USER: str = os.getenv("DB_USER", "root")
-    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "password")
-    DB_HOST: str = os.getenv("DB_HOST", "localhost")
-    DB_PORT: int = int(os.getenv("DB_PORT", 3306))
-    DB_NAME: str = os.getenv("DB_NAME", "my_database")
-    DB_DRIVER: str = os.getenv("DB_DRIVER", "mysql+asyncmy")
-    DB_ENCRYPT: str = os.getenv("DB_ENCRYPT", "false")
-    DB_TRUST_SERVER_CERTIFICATE: str = os.getenv("DB_TRUST_SERVER_CERTIFICATE", "true")
-    DB_SERVER_TYPE: str = os.getenv("DB_SERVER_TYPE", "mysql")
-    DB_DRIVER_TYPE: str = os.getenv("DB_DRIVER_TYPE", "asyncmy")
 
     @classmethod
     def load_from_yaml(cls, path: str = "config.yaml"):
@@ -55,3 +72,4 @@ class Settings(BaseSettings):
         return None
 
 settings = Settings.load_from_yaml()
+

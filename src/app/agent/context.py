@@ -3,23 +3,28 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field, fields
 from typing import Annotated, Dict, Optional
+from app.settings import settings
 
-from . import prompts
+
+SYSTEM_PROMPT = """You are a helpful AI assistant"""
 
 @dataclass(kw_only=True)
 class Context:
     """The context for the agent."""
 
     system_prompt: str = field(
-        default=prompts.SYSTEM_PROMPT,
+        default=SYSTEM_PROMPT,
         metadata={"description": "System prompt for the agent."},
     )
 
+    engine_id: str = settings.ENGINE_ID
+
+
     # Keep your original shape, but we will pass "openai-compatible/<ENGINE_ID>"
-    model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default="anthropic/claude-3-5-sonnet-20240620",
-        metadata={"description": "Provider/model string."},
-    )
+    # model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
+    #     default="anthropic/claude-3-5-sonnet-20240620",
+    #     metadata={"description": "Provider/model string."},
+    # )
 
     max_search_results: int = field(
         default=10,

@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import Any, Dict, Optional
 
+from langchain_core.messages import HumanMessage
+
 from qgdiag_lib_arquitectura.schemas.response_body import ResponseBody
 from qgdiag_lib_arquitectura.utilities.logging_conf import CustomLogger
 from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers
@@ -14,10 +16,10 @@ from qgdiag_lib_arquitectura.exceptions.types import (
 from openai import APIConnectionError
 
 from app.settings import settings
-from agent.graph import graph
-from agent.context import Context
-from agent.state import State
-from langchain_core.messages import HumanMessage
+from app.agent.graph import graph
+from app.agent.context import Context
+from app.agent.state import State
+
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 log = CustomLogger(name="agent.react.endpoint", log_type="Technical")
@@ -31,7 +33,7 @@ class ChatRequest(BaseModel):
 @router.post("/react-run", response_model=ResponseBody)
 async def react_run_endpoint(
     feature: str,
-    model_id: str,   # ENGINE_ID from AI Server
+    model_id: str,
     version: str,
     req: ChatRequest,
     headers: Dict[str, str] = Depends(get_authenticated_headers),
@@ -44,7 +46,8 @@ async def react_run_endpoint(
     """
     log.info("Inicio de ejecución de /agent/react-run")
     try:
-        # Build runtime context for the graph (tiny change: we pass headers/base_url)
+
+        # 1) Build runtime context for the graph
         ctx = Context(
             # keep your prompt, or override per-feature if needed
             # system_prompt=prompts.SYSTEM_PROMPT,

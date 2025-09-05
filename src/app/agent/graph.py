@@ -6,16 +6,19 @@ from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 from langgraph.runtime import Runtime
 
-from agent.context import Context
-from agent.state import InputState, State
-from agent.tools import TOOLS
-from agent.utils import load_chat_model
+from app.agent.context import Context
+from app.agent.state import InputState, State
+from app.agent.tools import TOOLS
+from app.agent.utils import load_chat_model
+from app.agent.aicore_langchain import get_openai_compatible_chat
+
+# --------- Nodos -------------
 
 async def call_model(state: State, runtime: Runtime[Context]) -> Dict[str, List[AIMessage]]:
-    model = load_chat_model(
-        runtime.context.model,
+    model = get_openai_compatible_chat(
         headers=runtime.context.headers,
         base_url=runtime.context.base_url,
+        engine_id=runtime.context.engine_id,
     ).bind_tools(TOOLS)
 
     system_message = runtime.context.system_prompt.format(
@@ -40,10 +43,8 @@ async def call_model(state: State, runtime: Runtime[Context]) -> Dict[str, List[
         }
     return {"messages": [response]}
 
-builder = StateGraph(State, input_schema=InputState, context_schema=Context)
-builder.add_node(call_model)
-builder.add_node("tools", ToolNode(TOOLS))
-builder.add_edge("__start__", "call_model")
+
+# ------------------ Vértices ----------------------
 
 def route_model_output(state: State) -> Literal["__end__", "tools"]:
     last_message = state.messages[-1]
@@ -51,6 +52,14 @@ def route_model_output(state: State) -> Literal["__end__", "tools"]:
         raise ValueError(f"Expected AIMessage, got {type(last_message).__name__}")
     return "__end__" if not last_message.tool_calls else "tools"
 
+# ------------------- Grafo ------------------------
+
+builder = StateGraph(State, input_schema=InputState, context_schema=Context)
+
+builder.add_node(call_model)
+builder.add_node("tools", ToolNode(TOOLS))
+
+builder.add_edge("__start__", "call_model")
 builder.add_conditional_edges("call_model", route_model_output)
 builder.add_edge("tools", "call_model")
 

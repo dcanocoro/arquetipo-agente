@@ -2,6 +2,7 @@ from __future__ import annotations
 import httpx
 from typing import Dict
 from langchain_openai import ChatOpenAI
+
 from qgdiag_lib_arquitectura.utilities.ai_core import ai_core
 from qgdiag_lib_arquitectura.utilities.ai_core.ai_core import retrieve_credentials
 
@@ -30,7 +31,7 @@ def get_openai_compatible_chat(*, headers: Dict[str, str], base_url: str, engine
     # 3) Return LangChain chat model using OpenAI-compatible endpoint
     return ChatOpenAI(
         openai_api_key=openai_api_key,
-        model=engine_id,         # ENGINE_ID, not a public model name
+        model=engine_id,
         base_url=openai_endpoint,
         http_client=http_client,
     )
