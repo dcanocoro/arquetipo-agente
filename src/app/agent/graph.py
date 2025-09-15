@@ -10,7 +10,7 @@ from app.agent.context import Context
 from app.agent.state import InputState, State
 from app.agent.tools import TOOLS
 from app.agent.aicore_langchain import get_openai_compatible_chat
-from app.agent.ms_nodes.history_nodes import load_history, write_user, write_ai
+from app.agent.ms_nodes.history_node import load_history, write_user, write_ai
 
 # --------- Nodos -------------
 
@@ -32,8 +32,6 @@ async def call_model(state: State, runtime: Runtime[Context]) -> Dict[str, List[
         await model.ainvoke(
             [{"role": "system", "content": system_message}, *state.messages]
         ),
-    response: AIMessage = await model.ainvoke(
-        [{"role": "system", "content": system_message}, *state.messages]
     )
 
     if state.is_last_step and response.tool_calls:

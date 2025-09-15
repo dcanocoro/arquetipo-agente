@@ -1,21 +1,29 @@
 envVars:
- dev:
-  ## Variables de Arquitectura
-  PROJECT_NAME: "qgdiag-microservicio-python-test"
-  ENVIRONMENT: "development"
+  dev:
+    ## Variables de Arquitectura
+    PROJECT_NAME: "qgdiag-esqueleto-orquestador-python"
+    ENVIRONMENT: "dev"
+    URL_HIST_CONV: "http://qgdiag-qgdiag-ms-historial-de-conversacion.ub-qgdiag-svc"
+    HIST_CONV_PORT: "8080"
+    URL_CONTROL_GASTOS: "http://qgdiag-qgdiag-ms-control-de-gasto.ub-qgdiag-svc"
+    CONTROL_GASTOS_PORT: "8080"
+    GESTOR_PROMPT_URL: "http://qgdiag-qgdiag-ms-gestor-de-prompts.ub-qgdiag-svc"
+    GESTOR_PROMPT_PORT: "8080"
+    GUARDRAILS_URL: "http://qgdiag-qgdiag-ms-control-de-guardarrailes.ub-qgdiag-svc"
+    GUARDRAILS_PORT: "8080"
 
-  ORCHESTRATOR_URL: "http://qgdiag-qgdiag-ms-orquestador-iag.ub-qgdiag.svc"
-  ORCHESTRATOR_PORT: "8080"
-  URL_CERT: "https://aebd.backend-desa.unicajasc.corp:443/qgd-arq-ms-pkm/jwks"
+    ## Variables del Microservicio
 
- pre:
-  ## Variables de Arquitectura
-  PROJECT_NAME: "qgdiag-microservicio-python-test"
-  ENVIRONMENT: "preproduccion"
+  pre:
+    ## Variables de Arquitectura
+    PROJECT_NAME: "qgdiag-esqueleto-orquestador-python"
+    ENVIRONMENT: "pre"
+    ARCHITECTURE_HANDLERS_SECURITY_ENABLED: "true"
+    ## Variables del Microservicio
 
- pro:
- ## Variables de Arquitectura
-  PROJECT_NAME: "qgdiag-microservicio-python-test"
-  ENVIRONMENT: "produccion"
-
-  ## Variables del microservicio
+  pro:
+    ## Variables de Arquitectura
+    PROJECT_NAME: "qgdiag-esqueleto-orquestador-python"
+    ENVIRONMENT: "pro"
+    ARCHITECTURE_HANDLERS_SECURITY_ENABLED: "true"
+    ## Variables del Microservicio

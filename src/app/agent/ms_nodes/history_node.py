@@ -2,8 +2,8 @@
 from __future__ import annotations
 from typing import Dict, List
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
-from agent.ms_history_client import HistoryClient, to_langchain, from_langchain
-from agent.state import State
+from app.agent.ms_clients.history_client import HistoryClient, to_langchain, from_langchain
+from app.agent.state import State
 from langgraph.runtime import Runtime
 
 async def load_history(state: State, runtime: Runtime) -> Dict[str, List[BaseMessage]]:
