@@ -17,8 +17,10 @@ async def load_history(state: State, runtime: Runtime) -> Dict[str, List[BaseMes
         return {"messages": []}
 
     client = HistoryClient(base_url=ctx.base_url_history, headers=ctx.headers)
+    print(f"Cliente creado: {client}")
     limit = getattr(ctx, "history_max_messages", None)
     raw_msgs = await client.get_messages(ctx.conversation_id, limit=limit)
+    print(f"messages: {raw_msgs}")
 
     # Mapear MS -> LangChain y ordenar por fecha si el MS no garantiza orden
     lc_msgs: List[BaseMessage] = [to_langchain(m) for m in raw_msgs]

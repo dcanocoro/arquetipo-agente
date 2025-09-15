@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     URL_LOCALHOST: str = os.getenv("URL_LOCALHOST", "http://127.0.0.1")
 
-    URL_HIST_CONV: str = os.getenv("URL_HIST_CONV", URL_LOCALHOST)
+    URL_HIST_CONV: str = os.getenv("URL_HIST_CONV", "http://qgdiag-qgdiag-ms-historial-de-conversacion.ub-qgdiag-svc")
     HIST_CONV_PORT: str = os.getenv("HIST_CONV_PORT", "8006")
 
     DRIVER_URL: str = os.getenv("DRIVER_URL", URL_LOCALHOST)

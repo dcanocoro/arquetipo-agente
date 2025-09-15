@@ -54,7 +54,8 @@ async def react_run_endpoint(
             # system_prompt=prompts.SYSTEM_PROMPT,
             engine_id=settings.ENGINE_ID,
             headers=headers,
-            base_url=settings.AICORE_URL
+            base_url=settings.AICORE_URL,
+            base_url_history=settings.URL_HIST_CONV
         )
 
         # Prepare input messages for this turn

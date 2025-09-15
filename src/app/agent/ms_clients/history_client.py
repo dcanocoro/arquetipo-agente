@@ -55,7 +55,7 @@ class HistoryClient:
         self.headers = headers
 
     async def get_messages(self, conversation_id: str, limit: Optional[int] = None) -> List[HistoryMsg]:
-        url = f"{self.base_url}/user-messages"  # ajusta al path real de URL_USER_MESSAGES
+        url = f"{self.base_url}/qgdiag-ms-historial-de-conversacion/conversation-history/get-user-messages-by-conversation-id"  # ajusta al path real de URL_USER_MESSAGES
         params = {"conversation_id": conversation_id}
         # si existe soporte de “limit” en el MS, incluirlo (mejor para performance)
         if limit is not None:
