@@ -16,25 +16,18 @@ class Context:
         default=SYSTEM_PROMPT,
         metadata={"description": "System prompt for the agent."},
     )
-
     engine_id: str = ""
-
-    # Keep your original shape, but we will pass "openai-compatible/<ENGINE_ID>"
-    # model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-    #     default="anthropic/claude-3-5-sonnet-20240620",
-    #     metadata={"description": "Provider/model string."},
-    # )
-
     max_search_results: int = field(
         default=10,
         metadata={"description": "Max Tavily results."},
     )
-
-    # NEW: authenticated headers for credential retrieval and cookie session reuse
     headers: Dict[str, str] = field(default_factory=dict)
-
-    # NEW: AI Core base URL (no trailing slash)
     base_url: Optional[str] = field(default=None)
+    base_url_history: Optional[str] = field(default=None)
+    
+    history_max_messages: int = field(default=40)
+    conversation_id: Optional[str] = field(default=None)
+    raw_app_id: Optional[str] = field(default=None)  # para validaciones del MS de historial
 
     def __post_init__(self) -> None:
         for f in fields(self):

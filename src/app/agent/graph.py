@@ -10,6 +10,7 @@ from app.agent.context import Context
 from app.agent.state import InputState, State
 from app.agent.tools import TOOLS
 from app.agent.aicore_langchain import get_openai_compatible_chat
+from app.agent.ms_nodes.history_nodes import load_history, write_user, write_ai
 
 # --------- Nodos -------------
 
@@ -56,14 +57,21 @@ def route_model_output(state: State) -> Literal["__end__", "tools"]:
     return "__end__" if not last_message.tool_calls else "tools"
 
 # ------------------- Grafo ------------------------
-
 builder = StateGraph(State, input_schema=InputState, context_schema=Context)
 
-builder.add_node(call_model)
+# NODOS
+builder.add_node("load_history", load_history)  # hidrata antes del turno
+builder.add_node("write_user", write_user)      # persiste INPUT del turno
+builder.add_node("call_model", call_model)
 builder.add_node("tools", ToolNode(TOOLS))
+builder.add_node("write_ai", write_ai)          # persiste RESPONSE final
 
-builder.add_edge("__start__", "call_model")
+# ARISTAS
+builder.add_edge("__start__", "load_history")
+builder.add_edge("load_history", "write_user")
+builder.add_edge("write_user", "call_model")
 builder.add_conditional_edges("call_model", route_model_output)
-builder.add_edge("tools", "call_model")
+builder.add_edge("tools", "call_model")  # sigue bucle herramienta->modelo
+builder.add_edge("write_ai", "__end__")
 
-graph = builder.compile(name="ReAct Agent")
+graph = builder.compile(name="ReAct Agent with History")
