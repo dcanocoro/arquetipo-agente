@@ -15,9 +15,11 @@ async def load_history(state: State, runtime: Runtime) -> Dict[str, List[BaseMes
     if not ctx.conversation_id:
         return {"messages": []}
 
-    client = HistoryClient(headers=ctx.headers)
-    limit = getattr(ctx, "history_max_messages", None)
-    raw_msgs = await client.get_messages(ctx.conversation_id, limit=limit)
+    client = HistoryClient()
+    raw_msgs = await client.get_messages(
+        conversation_id=ctx.conversation_id,
+        headers=ctx.headers
+    )
 
     lc_msgs: List[BaseMessage] = [to_langchain(m) for m in raw_msgs]
     return {"messages": lc_msgs}

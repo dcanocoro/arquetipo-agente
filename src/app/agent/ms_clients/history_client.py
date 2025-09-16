@@ -1,6 +1,6 @@
 # app/agent/ms_clients/history_client.py
 from __future__ import annotations
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from qgdiag_lib_arquitectura.clients.rest_client import RestClient
 from qgdiag_lib_arquitectura.utilities.logging_conf import CustomLogger
 from app.settings import settings
@@ -42,26 +42,24 @@ class HistoryClient:
     History MS client using corporate RestClient.
     Only GET is implemented because you provided only the read endpoint.
     """
-
-    def __init__(self, headers: Dict[str, str]):
-        # RestClient will add IAG-App-Id from env if missing.
-        port = settings.HIST_CONV_PORT if settings.HIST_CONV_PORT not in ("443", "80") else ""
-        self._client = RestClient(
-            url=settings.URL_HIST_CONV,
-            port=port,
-            timeout=30
-        )
-        self._headers = dict(headers)  # defensive copy
-
-    async def get_messages(self, conversation_id: str, limit: Optional[int] = None) -> List[MessageWire]:
-        log.info(f"Fetching history for conversation_id: {conversation_id} with limit: {limit}")
+    async def get_messages(
+        self,
+        conversation_id: str,
+        headers: Dict[str, Any]) -> List[MessageWire]:
+        
+        log.info(f"Fetching history for conversation_id: {conversation_id}")
         params = {"conversation_id": conversation_id}
 
         # The endpoint returns a *flat list* of Message
         try:
-            response = await self._client.get_call(
+            client = RestClient(
+                url=settings.URL_HIST_CONV,
+                port=settings.HIST_CONV_PORT,
+                timeout=30
+            )
+            response = await client.get_call(
                 endpoint=ENDPOINT,
-                headers=self._headers,
+                headers=headers,
                 params=params,
             )
             response.raise_for_status()

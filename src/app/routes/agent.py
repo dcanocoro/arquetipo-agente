@@ -50,8 +50,6 @@ async def react_run_endpoint(
 
         # 1) Build runtime context for the graph. Assuming Context has an async factory/build method.
         ctx = Context(
-            # keep your prompt, or override per-feature if needed
-            # system_prompt=prompts.SYSTEM_PROMPT,
             engine_id=settings.ENGINE_ID,
             headers=headers,
             base_url=settings.AICORE_URL,
