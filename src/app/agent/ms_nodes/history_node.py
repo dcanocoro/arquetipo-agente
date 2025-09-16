@@ -4,8 +4,7 @@ from typing import Dict, List
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.runtime import Runtime
 
-from app.agent.ms_clients.history_client import HistoryClient
-from app.agent.ms_clients.history_mapping import to_langchain, from_langchain
+from app.agent.ms_clients.history_client import HistoryClient, to_langchain, from_langchain
 from app.agent.state import State
 
 async def load_history(state: State, runtime: Runtime) -> Dict[str, List[BaseMessage]]:

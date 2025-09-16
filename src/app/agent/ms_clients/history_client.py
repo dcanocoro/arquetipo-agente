@@ -1,11 +1,15 @@
-# app/agent/ms_clients/history_client.py  (replace previous httpx client)
+# app/agent/ms_clients/history_client.py
 from __future__ import annotations
 from typing import Dict, List, Optional
-from qgdiag_lib_arquitectura.clients.rest import RestClient  # your corporate client
+from qgdiag_lib_arquitectura.clients.rest_client import RestClient
+from qgdiag_lib_arquitectura.utilities.logging_conf import CustomLogger
 from app.settings import settings
 from app.schemas.history_schema import MessageWire, MessageWireList
 from datetime import datetime, timezone
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
+
+ENDPOINT = "/qgdiag-ms-historial-de-conversacion/get-user-messages-by-conversation-id"
+log = CustomLogger(name="history.client", log_type="Technical")
 
 
 def to_langchain(m: MessageWire) -> BaseMessage:
@@ -41,28 +45,31 @@ class HistoryClient:
 
     def __init__(self, headers: Dict[str, str]):
         # RestClient will add IAG-App-Id from env if missing.
+        port = settings.HIST_CONV_PORT if settings.HIST_CONV_PORT not in ("443", "80") else ""
         self._client = RestClient(
             url=settings.URL_HIST_CONV,
-            port=settings.HIST_CONV_PORT,
+            port=port,
             timeout=30
         )
         self._headers = dict(headers)  # defensive copy
 
     async def get_messages(self, conversation_id: str, limit: Optional[int] = None) -> List[MessageWire]:
+        log.info(f"Fetching history for conversation_id: {conversation_id} with limit: {limit}")
         params = {"conversation_id": conversation_id}
-        # The backend signature doesn’t include limit in the router, so only add if your service supports it
-        if limit is not None:
-            params["limit"] = str(limit)
 
         # The endpoint returns a *flat list* of Message
-        res = await self._client.get_call(
-            endpoint=settings.HISTORY_PATH_USER_MESSAGES,
-            headers=self._headers,
-            params=params,
-            response_model=MessageWireList
-        )
-        return res.__root__
-
-    # --- Future write APIs (left as placeholders) ----------------------------
-    # async def append_message(self, m: MessageWire) -> None:
-    #     raise NotImplementedError("POST /user-messages not provided yet by the MS")
+        try:
+            response = await self._client.get_call(
+                endpoint=ENDPOINT,
+                headers=self._headers,
+                params=params,
+            )
+            response.raise_for_status()
+            json_data = response.json()
+            # The endpoint returns a flat list, so we validate it directly.
+            res = [MessageWire.model_validate(item) for item in json_data]
+            log.info(f"Found {len(res)} messages in history for conversation_id: {conversation_id}")
+            return res
+        except Exception:
+            log.exception(f"Failed to fetch history for conversation_id: {conversation_id}")
+            raise

@@ -55,7 +55,8 @@ async def react_run_endpoint(
             engine_id=settings.ENGINE_ID,
             headers=headers,
             base_url=settings.AICORE_URL,
-            base_url_history=settings.URL_HIST_CONV
+            base_url_history=settings.URL_HIST_CONV,
+            conversation_id=req.session_id,
         )
 
         # Prepare input messages for this turn

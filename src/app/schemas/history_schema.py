@@ -2,7 +2,7 @@
 from __future__ import annotations
 from datetime import datetime
 from typing import List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
 
 class MessageWire(BaseModel):
     message_id: str = Field(..., min_length=1)
@@ -11,6 +11,6 @@ class MessageWire(BaseModel):
     insight_id: str = Field(..., min_length=1)
     message_text: str | None = None
 
-class MessageWireList(BaseModel):
+class MessageWireList(RootModel[List[MessageWire]]):
     # The endpoint returns a *flat list* (response_model=List[Message])
-    __root__: List[MessageWire]
+    pass
