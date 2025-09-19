@@ -1,8 +1,10 @@
 from __future__ import annotations
+import json
+import re
+
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import BaseMessage
-from typing import Tuple
+from langchain_core.messages import AIMessage, BaseMessage
 
 from app.agent.aicore_langchain import get_openai_compatible_chat
 
@@ -32,11 +34,34 @@ def load_chat_model(fully_specified_name: str, *, headers=None, base_url=None) -
     return init_chat_model(model, model_provider=provider)
 
 
+def _try_extract_json_array(text: str) -> str | None:
+    candidate = text.strip()
+    if not candidate:
+        return None
+
+    if candidate.startswith("[") and candidate.endswith("]"):
+        return candidate
+
+    # Remove optional code fences
+    fenced = re.search(r"```(?:json)?\s*(\[[\s\S]*?\])\s*```", candidate, re.IGNORECASE)
+    if fenced:
+        return fenced.group(1)
+
+    match = re.search(r"\[[\s\S]*\]", candidate)
+    if match:
+        return match.group(0)
+
+    return None
+
+
 def normalize_ai_toolcalls(ai: AIMessage) -> AIMessage:
     """
     If ai.content is a stringified array of OpenAI-style function calls, convert it
     into LangChain's tool_calls structure on the message.
     """
+    if getattr(ai, "tool_calls", None):
+        return ai
+
     if not isinstance(ai.content, str):
         return ai
 
