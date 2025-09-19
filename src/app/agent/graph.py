@@ -211,7 +211,7 @@ async def call_model(state: State, config: RunnableConfig, runtime: Runtime[Cont
 
     ai_message = AIMessage(
         content=final_text,
-        tool_calls=tool_calls or None,
+        tool_calls=tool_calls,
         additional_kwargs=last_additional_kwargs,
         response_metadata=last_metadata,
         id=message_id,

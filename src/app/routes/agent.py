@@ -142,25 +142,147 @@ def _chunk_text(chunk: Any) -> str:
     return ""
 
 
+def _sanitize_for_json(value: Any) -> Any:
+    """Best effort conversion to JSON-serialisable primitives."""
+
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+
+    if isinstance(value, list):
+        return [_sanitize_for_json(item) for item in value]
+
+    if isinstance(value, dict):
+        sanitized: Dict[str, Any] = {}
+        for key, item in value.items():
+            sanitized[key] = _sanitize_for_json(item)
+        return sanitized
+
+    if hasattr(value, "model_dump"):
+        try:
+            return _sanitize_for_json(value.model_dump())
+        except Exception:  # pragma: no cover - defensive
+            pass
+
+    if hasattr(value, "dict"):
+        try:
+            return _sanitize_for_json(value.dict())
+        except Exception:  # pragma: no cover - defensive
+            pass
+
+    if hasattr(value, "__dict__"):
+        try:
+            data = {k: v for k, v in vars(value).items() if not k.startswith("_")}
+            return _sanitize_for_json(data)
+        except Exception:  # pragma: no cover - defensive
+            pass
+
+    # Fallback to string representation for unknown objects
+    return str(value)
+
+
+def _store_if_meaningful(target: Dict[str, Any], key: str, value: Any) -> None:
+    sanitized = _sanitize_for_json(value)
+    if sanitized is None:
+        return
+    if isinstance(sanitized, (list, dict)) and not sanitized:
+        return
+    if isinstance(sanitized, str) and not sanitized.strip():
+        return
+    target[key] = sanitized
+
+
+def _collect_tool_call_payloads(source: Any) -> List[Dict[str, Any]]:
+    """Collect any `tool_calls`-like entries from a nested payload."""
+
+    collected: List[Dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def _ingest(candidate: Any) -> None:
+        if not candidate:
+            return
+
+        items = candidate if isinstance(candidate, list) else [candidate]
+        for item in items:
+            coerced = _as_dict(item)
+            if not coerced:
+                continue
+            sanitized = _sanitize_for_json(coerced)
+            identifier = coerced.get("id") or coerced.get("tool_call_id")
+            if not identifier:
+                try:
+                    identifier = json.dumps(sanitized, sort_keys=True, ensure_ascii=False)
+                except TypeError:
+                    identifier = repr(sanitized)
+            if identifier in seen:
+                continue
+            seen.add(identifier)
+            collected.append(sanitized if isinstance(sanitized, dict) else _sanitize_for_json(coerced))
+
+    def _walk(value: Any) -> None:
+        if value is None:
+            return
+        if isinstance(value, (str, int, float, bool)):
+            return
+        if isinstance(value, list):
+            for element in value:
+                _walk(element)
+            return
+        if isinstance(value, dict):
+            if "tool_calls" in value:
+                _ingest(value.get("tool_calls"))
+            if "tool_call_chunks" in value:
+                _ingest(value.get("tool_call_chunks"))
+            if "delta" in value:
+                _walk(value.get("delta"))
+            if "additional_kwargs" in value:
+                _walk(value.get("additional_kwargs"))
+            for element in value.values():
+                _walk(element)
+            return
+
+        # For arbitrary objects fall back to dict conversion
+        _walk(_as_dict(value))
+
+    _walk(source)
+    return collected
+
+
 def _chunk_tool_deltas(chunk: Any) -> List[Dict[str, Any]]:
     deltas: List[Dict[str, Any]] = []
-    sources: List[Any] = []
 
-    if chunk is not None:
-        sources.append(getattr(chunk, "tool_call_chunks", None))
-        sources.append(getattr(chunk, "tool_calls", None))
-
-    chunk_dict = _as_dict(chunk)
-    sources.append(chunk_dict.get("tool_call_chunks"))
-    sources.append(chunk_dict.get("tool_calls"))
-
-    for maybe_list in sources:
-        if not maybe_list:
-            continue
-        for item in maybe_list:
+    def _extend(candidate: Any) -> None:
+        if not candidate:
+            return
+        items = candidate if isinstance(candidate, list) else [candidate]
+        for item in items:
             coerced = _as_dict(item)
             if coerced:
                 deltas.append(coerced)
+
+    if chunk is not None:
+        _extend(getattr(chunk, "tool_call_chunks", None))
+        _extend(getattr(chunk, "tool_calls", None))
+        additional = getattr(chunk, "additional_kwargs", None)
+        if isinstance(additional, dict):
+            _extend(additional.get("tool_calls"))
+            delta = additional.get("delta")
+            if isinstance(delta, (dict, list)):
+                _extend(delta)
+
+    chunk_dict = _as_dict(chunk)
+    _extend(chunk_dict.get("tool_call_chunks"))
+    _extend(chunk_dict.get("tool_calls"))
+
+    additional_dict = chunk_dict.get("additional_kwargs")
+    if isinstance(additional_dict, dict):
+        _extend(additional_dict.get("tool_calls"))
+        delta = additional_dict.get("delta")
+        if isinstance(delta, (dict, list)):
+            _extend(delta)
+
+    delta_field = chunk_dict.get("delta")
+    if isinstance(delta_field, (dict, list)):
+        _extend(delta_field)
 
     return deltas
 
@@ -170,14 +292,22 @@ def _chunk_function_call(chunk: Any) -> Optional[Dict[str, Any]]:
     if chunk is not None and hasattr(chunk, "additional_kwargs"):
         candidate = getattr(chunk, "additional_kwargs")
 
+    chunk_dict = _as_dict(chunk)
+
     if not isinstance(candidate, dict):
-        chunk_dict = _as_dict(chunk)
         if not isinstance(candidate, dict):
             candidate = chunk_dict.get("additional_kwargs")
         if not candidate and "function_call" in chunk_dict:
             fc = chunk_dict.get("function_call")
             if fc:
                 return _as_dict(fc)
+
+    # Look into delta payloads for OpenAI-compatible streams
+    delta_field = chunk_dict.get("delta")
+    if isinstance(delta_field, dict) and "function_call" in delta_field:
+        fc = delta_field.get("function_call")
+        if fc:
+            return _as_dict(fc)
 
     if isinstance(candidate, dict):
         fc = candidate.get("function_call")
@@ -207,6 +337,7 @@ def _event_to_wire(ev: dict) -> dict:
 
     if ev_type == "on_chat_model_stream":
         chunk = data.get("chunk") or data
+        chunk_dict = _as_dict(chunk)
         delta_text = _chunk_text(chunk)
         tool_deltas = _chunk_tool_deltas(chunk)
         function_delta = _chunk_function_call(chunk)
@@ -224,8 +355,62 @@ def _event_to_wire(ev: dict) -> dict:
         if response_meta:
             payload["response_metadata"] = response_meta
 
+        debug_info: Dict[str, Any] = {}
+        chunk_tool_payloads = _collect_tool_call_payloads(chunk_dict)
+        if chunk_tool_payloads:
+            debug_info["chunk_tool_calls"] = chunk_tool_payloads
+
+        event_tool_payloads = _collect_tool_call_payloads(data)
+        if event_tool_payloads and event_tool_payloads != chunk_tool_payloads:
+            debug_info["event_tool_calls"] = event_tool_payloads
+
+        additional_kwargs = _as_dict(chunk_dict.get("additional_kwargs"))
+        if additional_kwargs:
+            additional_debug: Dict[str, Any] = {}
+            _store_if_meaningful(additional_debug, "tool_calls", additional_kwargs.get("tool_calls"))
+            _store_if_meaningful(additional_debug, "function_call", additional_kwargs.get("function_call"))
+            if additional_debug:
+                debug_info["additional_kwargs"] = additional_debug
+
+        delta_field = _as_dict(chunk_dict.get("delta"))
+        if delta_field:
+            delta_debug: Dict[str, Any] = {}
+            _store_if_meaningful(delta_debug, "tool_calls", delta_field.get("tool_calls"))
+            _store_if_meaningful(delta_debug, "function_call", delta_field.get("function_call"))
+            if delta_debug:
+                debug_info["delta"] = delta_debug
+
+        if debug_info:
+            payload["debug"] = debug_info
+            try:
+                log.info(
+                    "Tool-call debug snapshot captured",
+                    extra={"tool_call_debug": json.dumps(debug_info, ensure_ascii=False)},
+                )
+            except Exception:  # pragma: no cover - logging is best-effort
+                log.info("Tool-call debug snapshot captured: %s", debug_info)
+
         return {
             "type": "token",
+            "ts": ts,
+            "run_id": run_id,
+            "node": node_name,
+            "data": payload,
+        }
+
+    if ev_type == "on_chat_model_end":
+        data_dict = _as_dict(data)
+        tool_payloads = _collect_tool_call_payloads(data_dict)
+        payload: Dict[str, Any] = {
+            "raw_output": _sanitize_for_json(data_dict),
+            "tool_calls": tool_payloads or None,
+        }
+
+        if not payload["tool_calls"]:
+            payload.pop("tool_calls")
+
+        return {
+            "type": "chat_model_end",
             "ts": ts,
             "run_id": run_id,
             "node": node_name,
