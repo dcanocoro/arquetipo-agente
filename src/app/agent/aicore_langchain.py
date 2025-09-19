@@ -32,4 +32,5 @@ async def get_openai_compatible_chat(*, headers: Dict[str, str], base_url: str, 
         model=engine_id,
         base_url=openai_endpoint,
         http_client=http_client,
+        streaming=True
     )
