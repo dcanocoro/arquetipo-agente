@@ -1,16 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-import json
-import time
-from typing import Any, AsyncIterator, Dict, List, Optional
-
 from fastapi import APIRouter, Depends
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from typing import Any, Dict, Optional
 
 from langchain_core.messages import HumanMessage
-from openai import APIConnectionError
 
 from qgdiag_lib_arquitectura.schemas.response_body import ResponseBody
 from qgdiag_lib_arquitectura.utilities.logging_conf import CustomLogger
@@ -19,12 +13,32 @@ from qgdiag_lib_arquitectura.exceptions.types import (
     ForbiddenException,
     InternalServerErrorException,
 )
+from openai import APIConnectionError
 
 from app.settings import settings
 from app.agent.graph import graph
 from app.agent.context import Context
 from app.agent.state import State
 from app.agent.utils import get_message_text
+
+# streaming addtions
+
+from fastapi import Response
+from fastapi.responses import StreamingResponse
+from datetime import datetime, timezone
+import asyncio
+import json
+from typing import AsyncIterator
+
+# app/routes/agent.py (add this route)
+from fastapi import Depends
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from typing import Dict, Optional, AsyncIterator
+import asyncio, json, time
+
+from qgdiag_lib_arquitectura.security.authentication import get_authenticated_headers
+from app.settings import settings
 from app.agent.aicore_langchain import get_openai_compatible_chat
 
 router = APIRouter(prefix="/agent", tags=["agent"])
@@ -87,11 +101,51 @@ async def react_run_endpoint(
     except Exception as e:
         log.exception("Error inesperado al ejecutar /agent/react-run")
         raise InternalServerErrorException(str(e)) from e
+    
+
+# --- helpers para serializar valores de eventos ---
+from langchain_core.messages import BaseMessage
+
+def _msg_to_text(x):
+    """
+    Convierte objetos de LangChain (ToolMessage, AIMessage, HumanMessage, etc.)
+    y estructuras anidadas en algo JSON-serializable (strings / dicts básicos).
+    """
+    if x is None:
+        return None
+    if isinstance(x, BaseMessage):
+        # Preferimos su .content en texto plano
+        c = getattr(x, "content", None)
+        if isinstance(c, (str, type(None))):
+            return c
+        # Si viene en formato por partes, reusa tu _as_text
+        return _as_text(c)
+    if isinstance(x, (str, int, float, bool)):
+        return x
+    if isinstance(x, (list, tuple)):
+        return [_msg_to_text(v) for v in x]
+    if isinstance(x, dict):
+        return {k: _msg_to_text(v) for k, v in x.items()}
+    # Último recurso:
+    return str(x)
 
 
-# --- Helper utilities for streaming payloads ----
+async def event_generator() -> AsyncIterator[bytes]:
+    yield _json_line({"type": "info", "ts": _now_iso(), "data": {"status": "stream_started"}}).encode("utf-8")
+    try:
+        async for ev in graph.astream_events(input_state, context=ctx, recursion_limit=4):
+            log.info(f"GRAPH EVENT RECEIVED: type={ev['event']}, node={ev.get('name')}")
+            line = _event_to_wire(ev)
+            # SOLO un yield por evento, siempre encodeado
+            yield _json_line(line).encode("utf-8")
+    except Exception as e:
+        yield _json_line({"type": "error", "ts": _now_iso(), "data": {"message": str(e)}}).encode("utf-8")
+        return
+    yield _json_line({"type": "graph_end", "ts": _now_iso(), "data": {"final_text": None}}).encode("utf-8")
 
-def _as_text(content: Any) -> str:
+
+# --- Helper: safe string extraction from LC content ----
+def _as_text(content) -> str:
     if content is None:
         return ""
     if isinstance(content, str):
@@ -110,84 +164,6 @@ def _as_text(content: Any) -> str:
     except Exception:
         return str(content)
 
-
-def _as_dict(obj: Any) -> Dict[str, Any]:
-    if obj is None:
-        return {}
-    if isinstance(obj, dict):
-        return {k: v for k, v in obj.items() if v is not None}
-    if hasattr(obj, "dict"):
-        try:
-            return {k: v for k, v in obj.dict(exclude_none=True).items()}
-        except Exception:  # pragma: no cover - defensive
-            pass
-    if hasattr(obj, "model_dump"):
-        try:
-            return {k: v for k, v in obj.model_dump(exclude_none=True).items()}
-        except Exception:  # pragma: no cover - defensive
-            pass
-    if hasattr(obj, "__dict__"):
-        return {k: v for k, v in vars(obj).items() if v is not None and not k.startswith("_")}
-    return {}
-
-
-def _chunk_text(chunk: Any) -> str:
-    if chunk is None:
-        return ""
-    if hasattr(chunk, "content"):
-        return _as_text(getattr(chunk, "content"))
-    chunk_dict = _as_dict(chunk)
-    if "content" in chunk_dict:
-        return _as_text(chunk_dict.get("content"))
-    return ""
-
-
-def _chunk_tool_deltas(chunk: Any) -> List[Dict[str, Any]]:
-    deltas: List[Dict[str, Any]] = []
-    sources: List[Any] = []
-
-    if chunk is not None:
-        sources.append(getattr(chunk, "tool_call_chunks", None))
-        sources.append(getattr(chunk, "tool_calls", None))
-
-    chunk_dict = _as_dict(chunk)
-    sources.append(chunk_dict.get("tool_call_chunks"))
-    sources.append(chunk_dict.get("tool_calls"))
-
-    for maybe_list in sources:
-        if not maybe_list:
-            continue
-        for item in maybe_list:
-            coerced = _as_dict(item)
-            if coerced:
-                deltas.append(coerced)
-
-    return deltas
-
-
-def _chunk_function_call(chunk: Any) -> Optional[Dict[str, Any]]:
-    candidate = None
-    if chunk is not None and hasattr(chunk, "additional_kwargs"):
-        candidate = getattr(chunk, "additional_kwargs")
-
-    if not isinstance(candidate, dict):
-        chunk_dict = _as_dict(chunk)
-        if not isinstance(candidate, dict):
-            candidate = chunk_dict.get("additional_kwargs")
-        if not candidate and "function_call" in chunk_dict:
-            fc = chunk_dict.get("function_call")
-            if fc:
-                return _as_dict(fc)
-
-    if isinstance(candidate, dict):
-        fc = candidate.get("function_call")
-        if fc:
-            if isinstance(fc, str):
-                return {"arguments": fc}
-            return _as_dict(fc)
-
-    return None
-
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
 
@@ -204,32 +180,59 @@ def _event_to_wire(ev: dict) -> dict:
     data = ev.get("data") or {}
     ts = _now_iso()
 
-
+    
     if ev_type == "on_chat_model_stream":
-        chunk = data.get("chunk") or data
-        delta_text = _chunk_text(chunk)
-        tool_deltas = _chunk_tool_deltas(chunk)
-        function_delta = _chunk_function_call(chunk)
-        response_meta = None
-        if chunk is not None and hasattr(chunk, "response_metadata"):
-            response_meta = getattr(chunk, "response_metadata")
-        if not isinstance(response_meta, dict):
-            response_meta = _as_dict(data.get("response_metadata"))
+        chunk = data.get("chunk")
+        delta = ""
 
-        payload: Dict[str, Any] = {"delta": delta_text or "", "accumulated": False}
-        if tool_deltas:
-            payload["tool_calls_delta"] = tool_deltas
-        if function_delta:
-            payload["function_call_delta"] = function_delta
-        if response_meta:
-            payload["response_metadata"] = response_meta
+        # chunk can be an object (AIMessageChunk) or a dict
+        # 1) Try attribute access
+        if chunk is not None and hasattr(chunk, "content"):
+            c = chunk.content
+            # content can be str or list of content parts
+            if isinstance(c, str):
+                delta = c
+            elif isinstance(c, list):
+                # content parts may be dicts or objects with .get/.text
+                parts = []
+                for p in c:
+                    if isinstance(p, str):
+                        parts.append(p)
+                    elif isinstance(p, dict):
+                        parts.append(p.get("text") or "")
+                    else:
+                        # object with .text or .content?
+                        txt = getattr(p, "text", None) or getattr(p, "content", None)
+                        if isinstance(txt, str):
+                            parts.append(txt)
+                delta = "".join(parts)
+
+        # 2) If chunk is a dict-like
+        if not delta and isinstance(chunk, dict):
+            c = chunk.get("content")
+            if isinstance(c, str):
+                delta = c
+            elif isinstance(c, list):
+                parts = []
+                for p in c:
+                    if isinstance(p, str):
+                        parts.append(p)
+                    elif isinstance(p, dict):
+                        parts.append(p.get("text") or "")
+                delta = "".join(parts)
+
+        # 3) Final fallback: some providers put text directly in data["content"]
+        if not delta and "content" in data:
+            c = data["content"]
+            if isinstance(c, str):
+                delta = c
 
         return {
             "type": "token",
             "ts": ts,
             "run_id": run_id,
             "node": node_name,
-            "data": payload,
+            "data": {"delta": delta, "accumulated": False},
         }
 
     # Tool lifecycle
@@ -241,7 +244,7 @@ def _event_to_wire(ev: dict) -> dict:
             "node": node_name,
             "data": {
                 "tool_name": data.get("name") or node_name or "unknown_tool",
-                "input": data.get("input"),
+                "input": _msg_to_text(data.get("input")),   # <-- aquí
             },
         }
 
@@ -253,10 +256,9 @@ def _event_to_wire(ev: dict) -> dict:
             "node": node_name,
             "data": {
                 "tool_name": data.get("name") or node_name or "unknown_tool",
-                "output": data.get("output"),
+                "output": _msg_to_text(data.get("output")),  # <-- y aquí
             },
         }
-
     # Node lifecycle
     if ev_type == "on_node_start":
         return {
@@ -279,20 +281,13 @@ def _event_to_wire(ev: dict) -> dict:
     # Graph end
     if ev_type == "on_graph_end":
         final_text = None
-        final_tool_calls: List[Dict[str, Any]] = []
         out = data.get("output") or {}
-
+        # Try to pull final text if available
         msgs = out.get("messages")
         if isinstance(msgs, list) and msgs:
+            # last message content as text
             last = msgs[-1]
-            last_dict = _as_dict(last)
-            final_text = _as_text(last_dict.get("content")) or _as_text(last_dict.get("text")) or _as_text(out.get("final_text"))
-            tool_call_items = last_dict.get("tool_calls") or []
-            if isinstance(tool_call_items, list):
-                for item in tool_call_items:
-                    coerced = _as_dict(item)
-                    if coerced:
-                        final_tool_calls.append(coerced)
+            final_text = _as_text(getattr(last, "content", None) or getattr(last, "text", None) or out.get("final_text"))
         else:
             final_text = _as_text(out.get("final_text"))
 
@@ -301,7 +296,44 @@ def _event_to_wire(ev: dict) -> dict:
             "ts": ts,
             "run_id": run_id,
             "node": node_name,
-            "data": {"final_text": final_text, "tool_calls": final_tool_calls or None},
+            "data": {"final_text": final_text},
+        }
+    
+        # 1) When the model node finishes, emit its final message as a dedicated event.
+    if ev_type == "on_chain_end" and node_name == "call_model":
+        out = data.get("output") or {}
+        # Node returns {"messages":[AIMessage|ToolMessage|...]}
+        msgs = out.get("messages") or []
+        final_text = None
+        if msgs:
+            last = msgs[-1]
+            final_text = _msg_to_text(getattr(last, "content", None))
+        return {
+            "type": "model_final",             # <- explicit terminal for the model step
+            "ts": ts,
+            "run_id": run_id,
+            "node": node_name,
+            "data": {"final_text": final_text},
+        }
+
+    # 2) When the whole graph finishes, also emit a terminal line.
+    if ev_type == "on_chain_end" and node_name == "ReAct Agent with History":
+        out = data.get("output") or {}
+        final_text = None
+        # Some runtimes put the last message in out["messages"]
+        msgs = out.get("messages")
+        if isinstance(msgs, list) and msgs:
+            last = msgs[-1]
+            final_text = _msg_to_text(getattr(last, "content", None))
+        else:
+            # or some put a custom "final_text" in output
+            final_text = _msg_to_text(out.get("final_text"))
+        return {
+            "type": "graph_end",               # <- your frontend can wait for this
+            "ts": ts,
+            "run_id": run_id,
+            "node": node_name,
+            "data": {"final_text": final_text},
         }
 
     # Fallback: info
@@ -354,10 +386,11 @@ async def react_stream_endpoint(
                     recursion_limit=4,
                 ):
                     log.info(f"GRAPH EVENT RECEIVED: type={ev['event']}, node={ev.get('name')}")
-                    wire_event = _event_to_wire(ev)
-                    if not wire_event:
+
+                    wire = _event_to_wire(ev)
+                    if wire is None:
                         continue
-                    yield _json_line(wire_event).encode("utf-8")
+                    yield _json_line(wire).encode("utf-8")
 
             except Exception as e:
                 # Emit error and stop
@@ -383,8 +416,6 @@ async def react_stream_endpoint(
     except Exception as e:
         log.exception("Error inesperado en /agent/react-stream")
         raise InternalServerErrorException(str(e)) from e
-
-
 
 def _jsonl(obj: dict) -> bytes:
     return (json.dumps(obj, ensure_ascii=False) + "\n").encode("utf-8")
