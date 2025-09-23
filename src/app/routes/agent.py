@@ -227,8 +227,62 @@ def _event_to_wire(ev: dict) -> dict:
             if isinstance(c, str):
                 delta = c
 
+        debug_info: Dict[str, Any] = {}
+        chunk_tool_payloads = _collect_tool_call_payloads(chunk_dict)
+        if chunk_tool_payloads:
+            debug_info["chunk_tool_calls"] = chunk_tool_payloads
+
+        event_tool_payloads = _collect_tool_call_payloads(data)
+        if event_tool_payloads and event_tool_payloads != chunk_tool_payloads:
+            debug_info["event_tool_calls"] = event_tool_payloads
+
+        additional_kwargs = _as_dict(chunk_dict.get("additional_kwargs"))
+        if additional_kwargs:
+            additional_debug: Dict[str, Any] = {}
+            _store_if_meaningful(additional_debug, "tool_calls", additional_kwargs.get("tool_calls"))
+            _store_if_meaningful(additional_debug, "function_call", additional_kwargs.get("function_call"))
+            if additional_debug:
+                debug_info["additional_kwargs"] = additional_debug
+
+        delta_field = _as_dict(chunk_dict.get("delta"))
+        if delta_field:
+            delta_debug: Dict[str, Any] = {}
+            _store_if_meaningful(delta_debug, "tool_calls", delta_field.get("tool_calls"))
+            _store_if_meaningful(delta_debug, "function_call", delta_field.get("function_call"))
+            if delta_debug:
+                debug_info["delta"] = delta_debug
+
+        if debug_info:
+            payload["debug"] = debug_info
+            try:
+                log.info(
+                    "Tool-call debug snapshot captured",
+                    extra={"tool_call_debug": json.dumps(debug_info, ensure_ascii=False)},
+                )
+            except Exception:  # pragma: no cover - logging is best-effort
+                log.info("Tool-call debug snapshot captured: %s", debug_info)
+
         return {
             "type": "token",
+            "ts": ts,
+            "run_id": run_id,
+            "node": node_name,
+            "data": {"delta": delta, "accumulated": False},
+        }
+
+    if ev_type == "on_chat_model_end":
+        data_dict = _as_dict(data)
+        tool_payloads = _collect_tool_call_payloads(data_dict)
+        payload: Dict[str, Any] = {
+            "raw_output": _sanitize_for_json(data_dict),
+            "tool_calls": tool_payloads or None,
+        }
+
+        if not payload["tool_calls"]:
+            payload.pop("tool_calls")
+
+        return {
+            "type": "chat_model_end",
             "ts": ts,
             "run_id": run_id,
             "node": node_name,
